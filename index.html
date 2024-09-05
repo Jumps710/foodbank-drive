@@ -1,127 +1,26 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>フードドライブ入庫</title>
-    <style>
-        * {
-    box-sizing: border-box;
-}
-
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 0;
-}
-
-.container {
-    max-width: 600px;
-    margin: 50px auto;
-    background: #fff;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 30px;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-label {
-    display: block;
-    margin-bottom: 8px;
-    color: #555;
-}
-
-input[type="text"],
-input[type="number"],
-select,
-textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-.radio-group {
-    display: inline-flex; /* ラジオボタンを横並びに配置 */
-    gap: 10px; /* ラジオボタンとラベルの間隔を調整 */
-}
-
-input[type="file"] {
-    padding: 5px 0;
-}
-
-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-#submitBtn {
-    background-color: #4CAF50;
-    color: white;
-    margin-right: 10px;
-}
-
-#resetBtn {
-    background-color: #f44336;
-    color: white;
-}
-
-.button-group {
-    text-align: center;
-}
-
-#photoPreview img {
-    max-width: 100px;
-    margin-top: 10px;
-    border-radius: 4px;
-}
-
-#logo {
-    display: block;
-    margin: 0 auto 20px auto;
-    max-width: 200px;
-}
-
-@media (max-width: 600px) {
-    .container {
-        margin: 20px;
-        padding: 20px;
-    }
-}
-
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
     <div class="container">
         <img id="logo" src="https://raw.githubusercontent.com/jumps710/foodbank-drive/main/rgb_02_fs(2).jpg" alt="ロゴ">
         <h1>フードドライブ入庫</h1>
         <form id="foodDriveForm">
-<!-- 設問1: tweetする/しない -->
-<div class="form-group">
-    <label>Tweet:</label>
-    <div class="radio-group">
-        <input type="radio" id="tweetYes" name="tweet" value="true" required>
-        <label for="tweetYes">する</label>
-        <input type="radio" id="tweetNo" name="tweet" value="false" required>
-        <label for="tweetNo">しない</label>
-    </div>
-</div>
-
+            <!-- 設問1: tweetする/しない -->
+            <div class="form-group">
+                <label>Tweet:</label>
+                <div class="radio-group">
+                    <input type="radio" id="tweetYes" name="tweet" value="true" required>
+                    <label for="tweetYes">する</label>
+                    <input type="radio" id="tweetNo" name="tweet" value="false" required>
+                    <label for="tweetNo">しない</label>
+                </div>
+            </div>
 
             <!-- 設問2: 寄付者 -->
             <div class="form-group">
@@ -179,145 +78,6 @@ button {
 
     <!-- WOFF API を使用するためのスクリプト -->
     <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.6/sdk.js"></script>
-    <script>
-        let displayName = '';  // displayNameを格納する変数
-
-        woff
-            .init({
-                woffId: "xVi8e_NseC51iDNs50uwWA" // 発行された WOFF ID を指定する
-            })
-            .then(() => {
-                console.log("WOFF APIが正常に初期化されました。");
-
-                // ユーザー情報を取得
-                return woff.getProfile();
-            })
-            .then((profile) => {
-                displayName = profile.displayName;  // displayNameを変数に格納
-                console.log("取得したユーザー名:", displayName);
-            })
-            .catch((err) => {
-                console.error("WOFF APIの初期化中にエラーが発生しました:", err.code, err.message);
-            });
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const donatorSelect = document.getElementById('donator');
-            const otherDonatorField = document.getElementById('otherDonatorField');
-            const otherDonatorInput = document.getElementById('otherDonator');
-            const photoInput = document.getElementById('photo');
-            const photoPreview = document.getElementById('photoPreview');
-            const form = document.getElementById('foodDriveForm');
-
-            // 寄付者選択時の処理
-            donatorSelect.addEventListener('change', function () {
-                if (this.value === 'その他') {
-                    otherDonatorField.style.display = 'block';
-                    otherDonatorInput.required = true;
-                } else {
-                    otherDonatorField.style.display = 'none';
-                    otherDonatorInput.required = false;
-                    otherDonatorInput.value = '';
-                }
-            });
-
-            // 写真アップロード時のプレビュー表示
-            photoInput.addEventListener('change', function () {
-                photoPreview.innerHTML = '';
-                const file = this.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        photoPreview.appendChild(img);
-                    }
-                    reader.readAsDataURL(file);
-                }
-            });
-
-            // フォーム送信時の処理
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-
-                // 入力内容のダイジェストを取得
-                const tweet = document.querySelector('input[name="tweet"]:checked').value === 'true' ? 'はい' : 'いいえ';
-                const donator = donatorSelect.value === 'その他' ? otherDonatorInput.value + '様' : donatorSelect.value + '様';
-                const weight = document.getElementById('weight').value;
-                const contents = document.getElementById('contents').value;
-                const memo = document.getElementById('memo').value;
-                const photo = photoInput.files[0] ? photoInput.files[0].name : 'なし';
-
-                const summary = `
-                **入力内容の確認**
-                1. tweetする/しない: ${tweet}
-                2. 寄付者: ${donator}
-                3. 重量: ${weight} kg
-                4. 寄付内容: ${contents}
-                5. メモ: ${memo}
-                6. 写真: ${photo}
-                `;
-
-                // 確認ダイアログ
-                if (confirm(`${summary}\n\nこれでよろしいですか？`)) {
-                    submitForm();
-                } else {
-                    // キャンセル時の処理（特に何もしない）
-                }
-            });
-
-            // フォーム送信処理
-            function submitForm() {
-                const formData = new FormData(form);
-
-                // 画像ファイルをBase64に変換
-                const file = photoInput.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function () {
-                        const base64Image = reader.result.split(',')[1];
-                        formData.append('photo', base64Image);
-                        formData.append('inputter', displayName);  // ユーザー名を追加
-                        sendData(Object.fromEntries(formData));
-                    }
-                    reader.readAsDataURL(file);
-                } else {
-                    formData.append('inputter', displayName);  // ユーザー名を追加
-                    sendData(Object.fromEntries(formData));
-                }
-            }
-
-            // データ送信
-            function sendData(data) {
-                // GASのWebアプリURLを設定
-                const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/あなたのGASのデプロイURL/exec';
-
-                fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    mode: 'cors',
-                    cache: 'no-cache',
-                    credentials: 'omit',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                })
-                    .then(response => response.json())
-                    .then(result => {
-                        if (result.status === 'success') {
-                            alert('送信が完了しました。');
-                            form.reset();
-                            photoPreview.innerHTML = '';
-                        } else {
-                            alert('送信に失敗しました。再度お試しください。');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('送信中にエラーが発生しました。');
-                    });
-            }
-        });
-    </script>
+    <script src="scripts.js"></script>
 </body>
-
 </html>
