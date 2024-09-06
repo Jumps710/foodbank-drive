@@ -84,25 +84,52 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // フォーム送信処理
-    function submitForm() {
-        const formData = new FormData(form);
+function submitForm() {
+    const formData = new FormData(form);
 
-        // 画像ファイルをBase64に変換
-        const file = photoInput.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function () {
-                const base64Image = reader.result.split(',')[1];
-                formData.append('photo', base64Image);
-                formData.append('inputter', displayName);  // ユーザー名を追加
-                sendData(Object.fromEntries(formData));
-            }
-            reader.readAsDataURL(file);
-        } else {
-            formData.append('inputter', displayName);  // ユーザー名を追加
-            sendData(Object.fromEntries(formData));
-        }
+    const file = photoInput.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            const base64Image = reader.result.split(',')[1];
+            formData.append('photo', base64Image);
+            formData.append('inputter', displayName);
+            sendData(formData);  // JSON.stringify() は不要
+        };
+        reader.readAsDataURL(file);
+    } else {
+        formData.append('inputter', displayName);
+        sendData(formData);  // JSON.stringify() は不要
     }
+}
+
+// データ送信
+function sendData(formData) {
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+
+    fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        mode: 'cors',
+        cache: 'no-cache',
+        credentials: 'omit',
+        body: formData // JSON.stringify() は不要
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.status === 'success') {
+            alert('送信が完了しました。');
+            form.reset();
+            photoPreview.innerHTML = '';
+        } else {
+            alert('送信に失敗しました。再度お試しください。');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('送信中にエラーが発生しました。');
+    });
+}
+
 
     // データ送信
     function sendData(data) {
