@@ -3,7 +3,7 @@ let displayName = '';  // displayNameを格納する変数
 // WOFF APIの初期化とユーザープロファイルの取得
 woff
     .init({
-        woffId: "xVi8e_NseC51iDNs50uwWA" // 発行された WOFF ID を指定する
+        woffId: "Bv2kAkzN6gcZ0nD0brpMpg" // 発行された WOFF ID を指定する
     })
     .then(() => {
         console.log("WOFF APIが正常に初期化されました。");
