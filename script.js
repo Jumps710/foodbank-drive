@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // データ送信
     function sendData(data) {
         // GASのWebアプリURLを設定
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/あなたのGASのデプロイURL/exec';
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIdZiP3KB3Tf6wMegdXXcorGE6E-djR3rewZLbBI2QBZa_VHYUrODRpdkO8jIhLvnD/exec';
 
         fetch(GAS_WEB_APP_URL, {
             method: 'POST',
