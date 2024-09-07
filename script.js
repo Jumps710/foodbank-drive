@@ -8,6 +8,10 @@ woff
     .then(() => {
         console.log("WOFF APIが正常に初期化されました。");
 
+        // ユーザーがログインしていない場合、ログインを促す
+        return woff.login();
+    })
+    .then(() => {
         // ユーザー情報を取得
         return woff.getProfile();
     })
@@ -18,6 +22,7 @@ woff
     .catch((err) => {
         console.error("WOFF APIの初期化中にエラーが発生しました:", err.code, err.message);
     });
+
 
 document.addEventListener('DOMContentLoaded', function () {
     const donatorSelect = document.getElementById('donator');
