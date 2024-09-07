@@ -67,6 +67,22 @@
             font-size: 14px;
             color: #555;
         }
+
+        /* プルダウンやボタンのスタイルをGoogleフォーム風に */
+        select, input[type="text"], input[type="number"], input[type="file"] {
+            font-size: 16px;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            transition: border-color 0.2s ease-in-out;
+        }
+
+        select:focus, input:focus {
+            border-color: #4285f4;
+            outline: none;
+        }
     </style>
 </head>
 <body>
@@ -122,7 +138,7 @@
             <!-- メモ欄のサイズを寄付内容と同じに -->
             <div class="form-group">
                 <label for="memo">メモ:</label>
-                <input type="text" id="memo" name="memo" placeholder="補足事項があれば入力してください">
+                <input type="text" id="memo" name="memo" placeholder="補足事項があれば入力してください" style="width: 100%; height: auto;">
             </div>
 
             <!-- 設問6: 写真 -->
@@ -187,28 +203,13 @@
                 <div><strong>重量:</strong> ${data.weight} kg</div>
                 <div><strong>寄付内容:</strong> ${data.contents}</div>
                 <div><strong>メモ:</strong> ${data.memo}</div>
-                <div><strong>写真:</strong> <img src="${data.photo}" style="max-width: 100px;"></div>
+                <div><strong>写真:</strong> ${data.photo ? `<img src="${data.photo}" alt="写真" style="max-width: 100px;">` : 'なし'}</div>
             `;
-
-            document.getElementById('reviewModal').style.display = 'block';
         }
 
-        // モーダルを閉じる機能
-        const modal = document.getElementById("reviewModal");
-        const closeBtn = document.getElementsByClassName("close")[0];
-        closeBtn.onclick = function() {
-            modal.style.display = "none";
-        }
-        window.onclick = function(event) {
-            if (event.target == modal) {
-                modal.style.display = "none";
-            }
-        }
-
-        // 写真のファイル名を表示
+        // ファイル選択ボタンの動作をカスタマイズ
         const photoInput = document.getElementById('photo');
         const fileNameDisplay = document.getElementById('fileName');
-
         photoInput.addEventListener('change', function () {
             const file = this.files[0];
             if (file) {
