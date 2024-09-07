@@ -39,6 +39,33 @@ document.addEventListener('DOMContentLoaded', function () {
     const photoInput = document.getElementById('photo');
     const photoPreview = document.getElementById('photoPreview');
     const form = document.getElementById('foodDriveForm');
+    const modal = document.getElementById('reviewModal');
+    const modalSummary = document.getElementById('modalSummary');
+    const confirmSubmit = document.getElementById('confirmSubmit');
+    const closeModal = document.getElementsByClassName('close')[0];
+
+    let formData = new FormData();
+
+    // モーダルを表示
+    const showModal = (summary) => {
+        modalSummary.innerHTML = summary;
+        modal.style.display = 'block';
+    };
+
+    // モーダルを閉じる
+    const hideModal = () => {
+        modal.style.display = 'none';
+    };
+
+    // モーダルの閉じるボタン
+    closeModal.onclick = hideModal;
+
+    // モーダル外をクリックしたら閉じる
+    window.onclick = (event) => {
+        if (event.target == modal) {
+            hideModal();
+        }
+    };
 
     // 寄付者選択時の処理
     donatorSelect.addEventListener('change', function () {
@@ -73,7 +100,6 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        // 各入力値を取得
         const tweet = document.querySelector('input[name="tweet"]:checked').value === 'true' ? 'する' : 'しない';
         const donator = donatorSelect.value === 'その他' ? otherDonatorInput.value + '様' : donatorSelect.value + '様';
         const weight = document.getElementById('weight').value;
@@ -83,7 +109,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const file = photoInput.files[0];
         let base64Image = '';
 
-        // ダイジェスト表示用テンプレート
         const createSummary = (imageTag = '') => `
             <div><strong>Tweet:</strong> ${tweet}</div>
             <div><strong>寄付者:</strong> ${donator}</div>
@@ -99,20 +124,20 @@ document.addEventListener('DOMContentLoaded', function () {
             reader.onload = function (e) {
                 base64Image = e.target.result;
                 const imgTag = `<img src="${base64Image}" style="max-width:100px; max-height:100px;" alt="写真プレビュー">`;
-
-                // 確認ダイアログにサムネイル付きで表示
-                if (confirm(`入力内容を確認してください。\n${createSummary(imgTag)}\nこれでよろしいですか？`)) {
-                    submitForm();
-                }
+                showModal(createSummary(imgTag));
             };
-            reader.readAsDataURL(file); // HEIC, JPEG, PNGをサポート
+            reader.readAsDataURL(file);
         } else {
-            // 画像がない場合の確認ダイアログ
-            if (confirm(`入力内容を確認してください。\n${createSummary()}\nこれでよろしいですか？`)) {
-                submitForm();
-            }
+            showModal(createSummary());
         }
     });
+
+    // 送信ボタン
+    confirmSubmit.onclick = function () {
+        hideModal();
+        submitForm();
+    };
+
 
     // フォーム送信処理
     function submitForm() {
