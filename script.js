@@ -33,6 +33,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const otherDonatorInput = document.getElementById('otherDonator');
     const photoInput = document.getElementById('photo');
     const photoPreview = document.getElementById('photoPreview');
+    const customFileLabel = document.querySelector('.custom-file-label');
+    const fileNameDisplay = document.getElementById('fileName');
     const form = document.getElementById('foodDriveForm');
     const modal = document.getElementById('reviewModal');
     const modalSummary = document.getElementById('modalSummary');
@@ -40,6 +42,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const closeModal = document.getElementsByClassName('close')[0];
 
     let formData = new FormData();
+
+    // カスタムファイル選択ラベルをクリックしたらファイル選択を開く
+    customFileLabel.addEventListener('click', function () {
+        photoInput.click();
+    });
+
+    // ファイル選択後、ファイル名を表示
+    photoInput.addEventListener('change', function () {
+        const file = photoInput.files[0];
+        if (file) {
+            fileNameDisplay.textContent = file.name;
+        } else {
+            fileNameDisplay.textContent = '選択されていません';
+        }
+    });
 
     const showModal = (summary) => {
         modalSummary.innerHTML = summary;
@@ -82,21 +99,6 @@ document.addEventListener('DOMContentLoaded', function () {
             weightInput.value = '';
         } else {
             weightInput.value = halfWidthValue;
-        }
-    });
-
-    photoInput.addEventListener('change', function () {
-        photoPreview.innerHTML = '';
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.maxWidth = '100px';
-                photoPreview.appendChild(img);
-            };
-            reader.readAsDataURL(file);
         }
     });
 
