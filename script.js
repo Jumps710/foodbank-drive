@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalSummary = document.getElementById('modalSummary');
     const confirmSubmit = document.getElementById('confirmSubmit');
     const closeModal = document.getElementsByClassName('close')[0];
+    const photoPreview = document.getElementById('photoPreview');  // 追加
 
     // ファイル選択後、ファイル名を表示
     photoInput.addEventListener('change', function () {
@@ -65,46 +66,46 @@ document.addEventListener('DOMContentLoaded', function () {
 
     confirmSubmit.onclick = function () {
         hideModal();
-        submitForm();
+        submitForm();  // `submitForm()`が関数外に移動しているか確認
     };
 
-function submitForm() {
-    const formData = new FormData(form);  // FormDataオブジェクトをそのまま使用
-    const file = photoInput.files[0];
-    if (file) {
-        formData.append('photo', file);  // ファイルもFormDataに追加
+    function submitForm() {
+        const formData = new FormData(form);  // FormDataオブジェクトをそのまま使用
+        const file = photoInput.files[0];
+        if (file) {
+            formData.append('photo', file);  // ファイルもFormDataに追加
+        }
+
+        sendData(formData);
     }
 
-    sendData(formData);
-}
+    function sendData(formData) {
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIdZiP3KB3Tf6wMegdXXcorGE6E-djR3rewZLbBI2QBZa_VHYUrODRpdkO8jIhLvnD/exec';
 
-function sendData(formData) {
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIdZiP3KB3Tf6wMegdXXcorGE6E-djR3rewZLbBI2QBZa_VHYUrODRpdkO8jIhLvnD/exec';
-
-    fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        body: formData,  // FormDataオブジェクトをそのまま送信
-        redirect: 'follow'
-    })
-    .then(response => response.text())
-    .then(result => {
-        try {
-            const jsonResult = JSON.parse(result);
-            if (jsonResult.status === 'success') {
-                alert('送信が完了しました。');
-                form.reset();
-                photoPreview.innerHTML = '';
-            } else {
-                alert('送信に失敗しました。再度お試しください。');
+        fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            body: formData,  // FormDataオブジェクトをそのまま送信
+            redirect: 'follow'
+        })
+        .then(response => response.text())
+        .then(result => {
+            try {
+                const jsonResult = JSON.parse(result);
+                if (jsonResult.status === 'success') {
+                    alert('送信が完了しました。');
+                    form.reset();
+                    photoPreview.innerHTML = '';  // `photoPreview`をクリア
+                } else {
+                    alert('送信に失敗しました。再度お試しください。');
+                }
+            } catch (error) {
+                console.error('レスポンスの処理中にエラーが発生しました:', error);
+                alert('送信中にエラーが発生しました。');
             }
-        } catch (error) {
-            console.error('レスポンスの処理中にエラーが発生しました:', error);
+        })
+        .catch(error => {
+            console.error('送信中にエラーが発生しました:', error);
             alert('送信中にエラーが発生しました。');
-        }
-    })
-    .catch(error => {
-        console.error('送信中にエラーが発生しました:', error);
-        alert('送信中にエラーが発生しました。');
-    });
-}
-
+        });
+    }
+});
