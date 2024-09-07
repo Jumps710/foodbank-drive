@@ -8,8 +8,6 @@ woff
     .then(() => {
         console.log("WOFF APIが正常に初期化されました。");
 
-        // ユーザーがログインしていない場合、ログインを促す
-        return woff.login();
     })
     .then(() => {
         // ユーザー情報を取得
