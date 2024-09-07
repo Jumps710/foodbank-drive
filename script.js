@@ -79,6 +79,26 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    const weightInput = document.getElementById('weight');
+
+weightInput.addEventListener('input', function () {
+    const value = weightInput.value;
+
+    // 全角数字を半角に変換
+    const halfWidthValue = value.replace(/[！-～]/g, function (ch) {
+        return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+    });
+
+    // 数値以外の文字が入った場合のエラーチェック
+    if (isNaN(halfWidthValue)) {
+        alert("数字だけ入力してください");
+        weightInput.value = ''; // エラーメッセージ表示後、フィールドをクリア
+    } else {
+        weightInput.value = halfWidthValue; // 半角数字に変換して再設定
+    }
+});
+
+
     // 写真アップロード時のプレビュー表示
     photoInput.addEventListener('change', function () {
         photoPreview.innerHTML = '';
