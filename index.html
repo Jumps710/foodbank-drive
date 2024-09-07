@@ -94,17 +94,16 @@
             </div>
 
             <!-- 設問5: メモ -->
-            <!-- メモ欄を最初は非表示に設定 -->
-            <div class="form-group" id="memoField" style="display:none;">
+            <!-- メモ欄を通常表示に戻す -->
+            <div class="form-group">
                 <label for="memo">メモ:</label>
                 <textarea id="memo" name="memo" rows="4" placeholder="補足事項があれば入力してください"></textarea>
             </div>
-            <button type="button" id="addMemoBtn">メモを追記する</button>
 
             <!-- 設問6: 写真 -->
             <div class="form-group">
                 <label for="photo">写真:</label>
-                <input type="file" id="photo" name="photo" accept="image/*">
+                <input type="file" id="photo" name="photo" accept="image/jpeg, image/png, image/heic"> <!-- capture="camera" を削除 -->
                 <div id="photoPreview"></div>
             </div>
 
@@ -131,12 +130,6 @@
     <script src="script.js"></script>
 
     <script>
-        // メモ欄の表示切り替え
-        document.getElementById('addMemoBtn').addEventListener('click', function() {
-            document.getElementById('memoField').style.display = 'block';
-            this.style.display = 'none'; // ボタンを隠す
-        });
-
         // 重量の全角数値を半角数値に変換
         const weightInput = document.getElementById('weight');
         weightInput.addEventListener('input', function () {
