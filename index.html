@@ -11,7 +11,6 @@
         <img id="logo" src="https://raw.githubusercontent.com/jumps710/foodbank-drive/main/rgb_02_fs(2).jpg" alt="ロゴ">
         <h1>フードドライブ入庫</h1>
         <form id="foodDriveForm">
-            <!-- 設問1: tweetする/しない -->
             <div class="form-group">
                 <label>Tweet:</label>
                 <div class="radio-group">
@@ -21,8 +20,6 @@
                     <label for="tweetNo">しない</label>
                 </div>
             </div>
-
-            <!-- 設問2: 寄付者 -->
             <div class="form-group">
                 <label for="donator">寄付者:</label>
                 <select id="donator" name="donator" required>
@@ -36,43 +33,31 @@
                     <option value="その他">その他</option>
                 </select>
             </div>
-
-            <!-- 設問2の「その他」選択時のみ表示 -->
             <div class="form-group" id="otherDonatorField" style="display:none;">
                 <label for="otherDonator">企業/団体名:</label>
                 <input type="text" id="otherDonator" name="otherDonator" placeholder="企業/団体名を入力してください">
             </div>
-
-            <!-- 設問3: 重量 -->
             <div class="form-group">
                 <label for="weight">重量 (kg):</label>
                 <input type="text" id="weight" name="weight" required placeholder="例: 0.1">
             </div>
-
-            <!-- 設問4: 寄付内容 -->
             <div class="form-group">
                 <label for="contents">寄付内容:</label>
                 <input type="text" id="contents" name="contents" required placeholder="例: 缶詰、レトルト、お米10キロなど">
             </div>
-
-            <!-- 設問5: メモ -->
             <div class="form-group">
                 <label for="memo">メモ:</label>
                 <input type="text" id="memo" name="memo" placeholder="補足事項があれば入力してください" style="width: 100%; height: auto;">
             </div>
-
-            <!-- 設問6: 写真 -->
             <div class="form-group">
                 <label for="photo">写真:</label>
                 <div class="file-group">
-                    <label for="photo" class="custom-file-label">ファイルを選択</label>
+                    <label for="photo">ファイルを選択</label>
                     <input type="file" id="photo" name="photo" accept="image/jpeg, image/png, image/heic">
                     <span class="file-name" id="fileName">選択されていません</span>
                 </div>
                 <div id="photoPreview"></div>
             </div>
-
-            <!-- 送信ボタンとリセットボタン -->
             <div class="button-group">
                 <button type="submit" id="submitBtn">送信</button>
                 <button type="reset" id="resetBtn">やり直し</button>
@@ -80,7 +65,6 @@
         </form>
     </div>
 
-    <!-- モーダルのHTML構造 -->
     <div id="reviewModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
