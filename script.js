@@ -1,25 +1,35 @@
 let displayName = '';  // displayNameを格納する変数
 
-// WOFF APIの初期化とユーザープロファイルの取得
-woff
-    .init({
-        woffId: "Bv2kAkzN6gcZ0nD0brpMpg" // 発行された WOFF ID を指定する
-    })
-    .then(() => {
-        console.log("WOFF APIが正常に初期化されました。");
+// WOFF APIの初期化とプロファイル取得の流れ
+const initializeWoff = () => {
+    woff
+        .init({
+            woffId: "Bv2kAkzN6gcZ0nD0brpMpg" // 発行された WOFF ID を指定する
+        })
+        .then(() => {
+            console.log("WOFF APIが正常に初期化されました。");
 
-    })
-    .then(() => {
-        // ユーザー情報を取得
-        return woff.getProfile();
-    })
-    .then((profile) => {
-        displayName = profile.displayName;  // displayNameを変数に格納
-        console.log("取得したユーザー名:", displayName);
-    })
-    .catch((err) => {
-        console.error("WOFF APIの初期化中にエラーが発生しました:", err.code, err.message);
-    });
+            // WOFFアプリ内で実行されているかを確認
+            if (!woff.isInClient()) {
+                console.warn("WOFFは外部ブラウザで実行されています。");
+                alert("この機能はLINE WORKSアプリ内でのみ使用できます。");
+                return;
+            }
+
+            // ユーザープロファイルを取得
+            return woff.getProfile();
+        })
+        .then((profile) => {
+            if (profile) {
+                displayName = profile.displayName;  // displayNameを変数に格納
+                console.log("取得したユーザー名:", displayName);
+            }
+        })
+        .catch((err) => {
+            console.error("WOFF APIの初期化中にエラーが発生しました:", err.code, err.message);
+        });
+};
+
 
 
 document.addEventListener('DOMContentLoaded', function () {
