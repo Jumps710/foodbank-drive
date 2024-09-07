@@ -50,14 +50,29 @@ textarea {
     gap: 10px;
 }
 
+.file-group input[type="file"] {
+    display: none; /* PCブラウザでもデフォルトのファイル選択ボタンを完全に非表示に */
+}
+
 .file-group label {
-    background-color: #4285f4;
-    color: white;
+    background-color: #4CAF50; /* ボタンの背景色 */
+    color: white; /* ボタンのテキストの色 */
     padding: 10px 20px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
 }
+
+.file-group label:hover {
+    background-color: #45a049; /* ホバー時の色 */
+}
+
+.file-group .file-name {
+    margin-left: 10px;
+    font-size: 14px;
+    color: #555;
+}
+
 
 .file-name {
     margin-left: 10px;
