@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function submitForm() {
         const formData = new FormData(form);
 
-        fetch('https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec', {
+        fetch('https://script.google.com/macros/s/AKfycbwIdZiP3KB3Tf6wMegdXXcorGE6E-djR3rewZLbBI2QBZa_VHYUrODRpdkO8jIhLvnD/exec', {
             method: 'POST',
             body: formData,  // 自動的にmultipart/form-dataとして送信
             redirect: 'follow'
