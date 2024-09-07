@@ -79,33 +79,34 @@ document.addEventListener('DOMContentLoaded', function () {
         sendData(formData);
     }
 
-    function sendData(formData) {
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIdZiP3KB3Tf6wMegdXXcorGE6E-djR3rewZLbBI2QBZa_VHYUrODRpdkO8jIhLvnD/exec';
+function sendData(address, profile) {
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
-        fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            body: formData,  // FormDataオブジェクトをそのまま送信
-            redirect: 'follow'
-        })
-        .then(response => response.text())
-        .then(result => {
-            try {
-                const jsonResult = JSON.parse(result);
-                if (jsonResult.status === 'success') {
-                    alert('送信が完了しました。');
-                    form.reset();
-                    photoPreview.innerHTML = '';  // `photoPreview`をクリア
-                } else {
-                    alert('送信に失敗しました。再度お試しください。');
-                }
-            } catch (error) {
-                console.error('レスポンスの処理中にエラーが発生しました:', error);
-                alert('送信中にエラーが発生しました。');
-            }
-        })
-        .catch(error => {
-            console.error('送信中にエラーが発生しました:', error);
-            alert('送信中にエラーが発生しました。');
-        });
-    }
+    const params = new URLSearchParams();
+    params.append('address', address);
+    params.append('profile', JSON.stringify(profile));
+
+    fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json'
+        },
+        body: params,  // URLSearchParamsを送信
+        redirect: 'follow'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.status === 'success') {
+            alert('送信が完了しました。');
+        } else {
+            alert('送信に失敗しました。再度お試しください。');
+        }
+    })
+    .catch(error => {
+        console.error('送信中にエラーが発生しました:', error);
+        alert('送信中にエラーが発生しました。');
+    });
+}
+
 });
