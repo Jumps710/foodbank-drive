@@ -10,7 +10,7 @@
     <div class="container">
         <img id="logo" src="https://raw.githubusercontent.com/jumps710/foodbank-drive/main/rgb_02_fs(2).jpg" alt="ロゴ">
         <h1>フードドライブ入庫</h1>
-        <form id="foodDriveForm">
+        <form id="foodDriveForm" method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label>Tweet:</label>
                 <div class="radio-group">
@@ -21,7 +21,6 @@
                 </div>
             </div>
 
-            <!-- 寄付者のプルダウン -->
             <div class="form-group">
                 <label for="donator">寄付者:</label>
                 <select id="donator" name="donator" required>
@@ -56,7 +55,6 @@
                 <input type="text" id="memo" name="memo" placeholder="補足事項があれば入力してください">
             </div>
 
-            <!-- 写真添付 -->
             <div class="form-group">
                 <label for="photo">写真:</label>
                 <div class="file-group">
