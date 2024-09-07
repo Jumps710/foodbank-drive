@@ -68,27 +68,43 @@ document.addEventListener('DOMContentLoaded', function () {
         submitForm();
     };
 
-    function submitForm() {
-        const formData = new FormData(form);
+function submitForm() {
+    const formData = new FormData(form);  // FormDataオブジェクトをそのまま使用
+    const file = photoInput.files[0];
+    if (file) {
+        formData.append('photo', file);  // ファイルもFormDataに追加
+    }
 
-        fetch('https://script.google.com/macros/s/AKfycbwIdZiP3KB3Tf6wMegdXXcorGE6E-djR3rewZLbBI2QBZa_VHYUrODRpdkO8jIhLvnD/exec', {
-            method: 'POST',
-            body: formData,  // 自動的にmultipart/form-dataとして送信
-            redirect: 'follow'
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === 'success') {
+    sendData(formData);
+}
+
+function sendData(formData) {
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+
+    fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        body: formData,  // FormDataオブジェクトをそのまま送信
+        redirect: 'follow'
+    })
+    .then(response => response.text())
+    .then(result => {
+        try {
+            const jsonResult = JSON.parse(result);
+            if (jsonResult.status === 'success') {
                 alert('送信が完了しました。');
                 form.reset();
-                document.getElementById('photoPreview').innerHTML = '';
+                photoPreview.innerHTML = '';
             } else {
                 alert('送信に失敗しました。再度お試しください。');
             }
-        })
-        .catch(error => {
-            console.error('送信中にエラーが発生しました:', error);
+        } catch (error) {
+            console.error('レスポンスの処理中にエラーが発生しました:', error);
             alert('送信中にエラーが発生しました。');
-        });
-    }
-});
+        }
+    })
+    .catch(error => {
+        console.error('送信中にエラーが発生しました:', error);
+        alert('送信中にエラーが発生しました。');
+    });
+}
+
