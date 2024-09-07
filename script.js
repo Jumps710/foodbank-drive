@@ -141,46 +141,52 @@ document.addEventListener('DOMContentLoaded', function () {
         submitForm();
     };
 
-    function submitForm() {
-        const formData = new FormData(form);
+ function submitForm() {
+    const formData = new FormData(form);
 
-        const file = photoInput.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function () {
-                const base64Image = reader.result.split(',')[1];
-                formData.append('photo', base64Image);
-                sendData(Object.fromEntries(formData));
-            };
-            reader.readAsDataURL(file);
-        } else {
-            sendData(Object.fromEntries(formData));
-        }
+    const file = photoInput.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            const base64Image = reader.result.split(',')[1];
+            formData.append('photo', base64Image);
+            sendData(new URLSearchParams(formData));  // URLSearchParamsを使用
+        };
+        reader.readAsDataURL(file);
+    } else {
+        sendData(new URLSearchParams(formData));  // URLSearchParamsを使用
     }
+}
 
-    function sendData(data) {
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+function sendData(params) {
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
-        fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === 'success') {
+    fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        body: params,  // URLSearchParamsを送信
+        headers: {
+            'Content-Type': 'text/plain;charset=utf-8',  // Content-Typeをtext/plainに設定
+        },
+        redirect: 'follow'  // リダイレクトに対応
+    })
+    .then(response => response.text())  // テキストとして処理
+    .then(result => {
+        try {
+            const jsonResult = JSON.parse(result);  // レスポンスをJSONとして処理
+            if (jsonResult.status === 'success') {
                 alert('送信が完了しました。');
                 form.reset();
                 photoPreview.innerHTML = '';
             } else {
                 alert('送信に失敗しました。再度お試しください。');
             }
-        })
-        .catch(error => {
-            console.error('送信中にエラーが発生しました:', error);
+        } catch (error) {
+            console.error('レスポンスの処理中にエラーが発生しました:', error);
             alert('送信中にエラーが発生しました。');
-        });
-    }
-});
+        }
+    })
+    .catch(error => {
+        console.error('送信中にエラーが発生しました:', error);
+        alert('送信中にエラーが発生しました。');
+    });
+}
