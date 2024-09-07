@@ -1,27 +1,24 @@
-let displayName = '';  // displayNameを格納する変数
+let displayName = '';
 
 // WOFF APIの初期化とプロファイル取得の流れ
 const initializeWoff = () => {
     woff
         .init({
-            woffId: "Bv2kAkzN6gcZ0nD0brpMpg" // 発行された WOFF ID を指定する
+            woffId: "Bv2kAkzN6gcZ0nD0brpMpg"
         })
         .then(() => {
             console.log("WOFF APIが正常に初期化されました。");
 
-            // WOFFアプリ内で実行されているかを確認
             if (!woff.isInClient()) {
-                console.warn("WOFFは外部ブラウザで実行されています。");
                 alert("この機能はLINE WORKSアプリ内でのみ使用できます。");
                 return;
             }
 
-            // ユーザープロファイルを取得
             return woff.getProfile();
         })
         .then((profile) => {
             if (profile) {
-                displayName = profile.displayName;  // displayNameを変数に格納
+                displayName = profile.displayName;
                 console.log("取得したユーザー名:", displayName);
             }
         })
@@ -29,8 +26,6 @@ const initializeWoff = () => {
             console.error("WOFF APIの初期化中にエラーが発生しました:", err.code, err.message);
         });
 };
-
-
 
 document.addEventListener('DOMContentLoaded', function () {
     const donatorSelect = document.getElementById('donator');
@@ -46,28 +41,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let formData = new FormData();
 
-    // モーダルを表示
     const showModal = (summary) => {
         modalSummary.innerHTML = summary;
         modal.style.display = 'block';
     };
 
-    // モーダルを閉じる
     const hideModal = () => {
         modal.style.display = 'none';
     };
 
-    // モーダルの閉じるボタン
     closeModal.onclick = hideModal;
 
-    // モーダル外をクリックしたら閉じる
     window.onclick = (event) => {
         if (event.target == modal) {
             hideModal();
         }
     };
 
-    // 寄付者選択時の処理
     donatorSelect.addEventListener('change', function () {
         if (this.value === 'その他') {
             otherDonatorField.style.display = 'block';
@@ -81,25 +71,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const weightInput = document.getElementById('weight');
 
-weightInput.addEventListener('input', function () {
-    const value = weightInput.value;
+    weightInput.addEventListener('input', function () {
+        const value = weightInput.value;
+        const halfWidthValue = value.replace(/[！-～]/g, function (ch) {
+            return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+        });
 
-    // 全角数字を半角に変換
-    const halfWidthValue = value.replace(/[！-～]/g, function (ch) {
-        return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+        if (isNaN(halfWidthValue)) {
+            alert("数字だけ入力してください");
+            weightInput.value = '';
+        } else {
+            weightInput.value = halfWidthValue;
+        }
     });
 
-    // 数値以外の文字が入った場合のエラーチェック
-    if (isNaN(halfWidthValue)) {
-        alert("数字だけ入力してください");
-        weightInput.value = ''; // エラーメッセージ表示後、フィールドをクリア
-    } else {
-        weightInput.value = halfWidthValue; // 半角数字に変換して再設定
-    }
-});
-
-
-    // 写真アップロード時のプレビュー表示
     photoInput.addEventListener('change', function () {
         photoPreview.innerHTML = '';
         const file = this.files[0];
@@ -109,14 +94,12 @@ weightInput.addEventListener('input', function () {
                 const img = document.createElement('img');
                 img.src = e.target.result;
                 img.style.maxWidth = '100px';
-                img.style.maxHeight = '100px';
                 photoPreview.appendChild(img);
             };
             reader.readAsDataURL(file);
         }
     });
 
-    // フォーム送信時の処理
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -138,12 +121,11 @@ weightInput.addEventListener('input', function () {
             <div><strong>写真:</strong> ${imageTag ? imageTag : 'なし'}</div>
         `;
 
-        // 画像がある場合はBase64に変換し、サムネイルを作成
         if (file) {
             const reader = new FileReader();
             reader.onload = function (e) {
                 base64Image = e.target.result;
-                const imgTag = `<img src="${base64Image}" style="max-width:100px; max-height:100px;" alt="写真プレビュー">`;
+                const imgTag = `<img src="${base64Image}" style="max-width:100px;" alt="写真プレビュー">`;
                 showModal(createSummary(imgTag));
             };
             reader.readAsDataURL(file);
@@ -152,18 +134,14 @@ weightInput.addEventListener('input', function () {
         }
     });
 
-    // 送信ボタン
     confirmSubmit.onclick = function () {
         hideModal();
         submitForm();
     };
 
-
-    // フォーム送信処理
     function submitForm() {
         const formData = new FormData(form);
 
-        // 画像ファイルをBase64に変換して追加
         const file = photoInput.files[0];
         if (file) {
             const reader = new FileReader();
@@ -178,7 +156,6 @@ weightInput.addEventListener('input', function () {
         }
     }
 
-    // データ送信処理
     function sendData(data) {
         const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
