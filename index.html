@@ -5,92 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <title>フードドライブ入庫</title>
     <link rel="stylesheet" href="styles.css">
-    <style>
-        /* モーダルの基本スタイル */
-        .modal {
-            display: none; /* デフォルトは非表示 */
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgb(0,0,0);
-            background-color: rgba(0,0,0,0.4);
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 600px;
-        }
-
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .close:hover,
-        .close:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        /* Googleフォーム風のスタイルをファイル選択ボタンに適用 */
-        .file-group {
-            display: flex;
-            align-items: center;
-        }
-
-        .file-group input[type="file"] {
-            display: none; /* 隠す */
-        }
-
-        .file-group label {
-            background-color: #4285f4;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .file-name {
-            margin-left: 10px;
-            font-size: 14px;
-            color: #555;
-        }
-
-        /* プルダウンやボタンのスタイルをGoogleフォーム風に */
-        select, input[type="text"], input[type="number"], input[type="file"] {
-            font-size: 16px;
-            padding: 10px;
-            width: 100%;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-            transition: border-color 0.2s ease-in-out;
-        }
-
-        select:focus, input:focus {
-            border-color: #4285f4;
-            outline: none;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
         <img id="logo" src="https://raw.githubusercontent.com/jumps710/foodbank-drive/main/rgb_02_fs(2).jpg" alt="ロゴ">
-        <h1 style="font-size: 24px;">フードドライブ入庫</h1> <!-- タイトル文字を小さく -->
+        <h1>フードドライブ入庫</h1>
         <form id="foodDriveForm">
-            <!-- 設問1: tweetする/しない -->
             <div class="form-group">
                 <label>Tweet:</label>
                 <div class="radio-group">
@@ -100,8 +20,6 @@
                     <label for="tweetNo">しない</label>
                 </div>
             </div>
-
-            <!-- 設問2: 寄付者 -->
             <div class="form-group">
                 <label for="donator">寄付者:</label>
                 <select id="donator" name="donator" required>
@@ -115,33 +33,22 @@
                     <option value="その他">その他</option>
                 </select>
             </div>
-
-            <!-- 設問2の「その他」選択時のみ表示 -->
             <div class="form-group" id="otherDonatorField" style="display:none;">
                 <label for="otherDonator">企業/団体名:</label>
                 <input type="text" id="otherDonator" name="otherDonator" placeholder="企業/団体名を入力してください">
             </div>
-
-            <!-- 設問3: 重量 -->
             <div class="form-group">
                 <label for="weight">重量 (kg):</label>
                 <input type="text" id="weight" name="weight" required placeholder="例: 0.1">
             </div>
-
-            <!-- 設問4: 寄付内容 -->
             <div class="form-group">
                 <label for="contents">寄付内容:</label>
                 <input type="text" id="contents" name="contents" required placeholder="例: 缶詰、レトルト、お米10キロなど">
             </div>
-
-            <!-- 設問5: メモ -->
-            <!-- メモ欄のサイズを寄付内容と同じに -->
             <div class="form-group">
                 <label for="memo">メモ:</label>
                 <input type="text" id="memo" name="memo" placeholder="補足事項があれば入力してください" style="width: 100%; height: auto;">
             </div>
-
-            <!-- 設問6: 写真 -->
             <div class="form-group">
                 <label for="photo">写真:</label>
                 <div class="file-group">
@@ -151,8 +58,6 @@
                 </div>
                 <div id="photoPreview"></div>
             </div>
-
-            <!-- 送信ボタンとリセットボタン -->
             <div class="button-group">
                 <button type="submit" id="submitBtn">送信</button>
                 <button type="reset" id="resetBtn">やり直し</button>
@@ -160,7 +65,6 @@
         </form>
     </div>
 
-    <!-- モーダルのHTML構造 -->
     <div id="reviewModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -170,54 +74,7 @@
         </div>
     </div>
 
-    <!-- WOFF API を使用するためのスクリプト -->
     <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.6/sdk.js"></script>
     <script src="script.js"></script>
-
-    <script>
-        // 重量の全角数値を半角数値に変換
-        const weightInput = document.getElementById('weight');
-        weightInput.addEventListener('input', function () {
-            const value = weightInput.value;
-
-            // 全角数字を半角に変換
-            const halfWidthValue = value.replace(/[！-～]/g, function (ch) {
-                return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
-            });
-
-            // 数値以外の文字が入った場合のエラーチェック
-            if (isNaN(halfWidthValue)) {
-                alert("数字だけ入力してください");
-                weightInput.value = ''; // エラーメッセージ表示後、フィールドをクリア
-            } else {
-                weightInput.value = halfWidthValue; // 半角数字に変換して再設定
-            }
-        });
-
-        // 入力内容のダイジェスト表示（モーダル内に表示）
-        function displayModalSummary(data) {
-            const modalSummary = document.getElementById('modalSummary');
-            modalSummary.innerHTML = `
-                <div><strong>Tweet:</strong> ${data.tweet}</div>
-                <div><strong>寄付者:</strong> ${data.donator}</div>
-                <div><strong>重量:</strong> ${data.weight} kg</div>
-                <div><strong>寄付内容:</strong> ${data.contents}</div>
-                <div><strong>メモ:</strong> ${data.memo}</div>
-                <div><strong>写真:</strong> ${data.photo ? `<img src="${data.photo}" alt="写真" style="max-width: 100px;">` : 'なし'}</div>
-            `;
-        }
-
-        // ファイル選択ボタンの動作をカスタマイズ
-        const photoInput = document.getElementById('photo');
-        const fileNameDisplay = document.getElementById('fileName');
-        photoInput.addEventListener('change', function () {
-            const file = this.files[0];
-            if (file) {
-                fileNameDisplay.textContent = file.name;
-            } else {
-                fileNameDisplay.textContent = '選択されていません';
-            }
-        });
-    </script>
 </body>
 </html>
