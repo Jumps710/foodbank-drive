@@ -56,10 +56,20 @@
             </div>
 
             <!-- 設問5: メモ -->
-            <div class="form-group">
-                <label for="memo">メモ:</label>
-                <textarea id="memo" name="memo" rows="4" placeholder="補足事項があれば入力してください"></textarea>
-            </div>
+<!-- メモ欄を最初は非表示に設定 -->
+<div class="form-group" id="memoField" style="display:none;">
+    <label for="memo">メモ:</label>
+    <textarea id="memo" name="memo" rows="4" placeholder="補足事項があれば入力してください"></textarea>
+</div>
+<button type="button" id="addMemoBtn">メモを追記する</button>
+
+<script>
+document.getElementById('addMemoBtn').addEventListener('click', function() {
+    document.getElementById('memoField').style.display = 'block';
+    this.style.display = 'none'; // ボタンを隠す
+});
+</script>
+
 
             <!-- 設問6: 写真 -->
             <div class="form-group">
