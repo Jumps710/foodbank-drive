@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalSummary = document.getElementById('modalSummary');
     const confirmSubmit = document.getElementById('confirmSubmit');
     const closeModal = document.getElementsByClassName('close')[0];
-    const photoPreview = document.getElementById('photoPreview');  // 追加
+    const photoPreview = document.getElementById('photoPreview');  
 
     // ファイル選択後、ファイル名を表示
     photoInput.addEventListener('change', function () {
@@ -66,47 +66,67 @@ document.addEventListener('DOMContentLoaded', function () {
 
     confirmSubmit.onclick = function () {
         hideModal();
-        submitForm();  // `submitForm()`が関数外に移動しているか確認
+        submitForm();
     };
 
     function submitForm() {
-        const formData = new FormData(form);  // FormDataオブジェクトをそのまま使用
         const file = photoInput.files[0];
-        if (file) {
-            formData.append('photo', file);  // ファイルもFormDataに追加
-        }
 
-        sendData(formData);
+        // ファイルがある場合はBase64エンコードする
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function () {
+                const base64Image = reader.result.split(',')[1];  // Base64の画像データ部分を抽出
+                sendData({
+                    tweet: document.querySelector('input[name="tweet"]:checked').value,
+                    donator: document.getElementById('donator').value,
+                    weight: document.getElementById('weight').value,
+                    contents: document.getElementById('contents').value,
+                    memo: document.getElementById('memo').value,
+                    photo: base64Image  // 画像データをBase64で送信
+                });
+            };
+            reader.readAsDataURL(file);
+        } else {
+            sendData({
+                tweet: document.querySelector('input[name="tweet"]:checked').value,
+                donator: document.getElementById('donator').value,
+                weight: document.getElementById('weight').value,
+                contents: document.getElementById('contents').value,
+                memo: document.getElementById('memo').value
+            });
+        }
     }
 
-function sendData(address, profile) {
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+    function sendData(data) {
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
-    const params = new URLSearchParams();
-    params.append('address', address);
-    params.append('profile', JSON.stringify(profile));
-
-    fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json'
-        },
-        body: params,  // URLSearchParamsを送信
-        redirect: 'follow'
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.status === 'success') {
-            alert('送信が完了しました。');
-        } else {
-            alert('送信に失敗しました。再度お試しください。');
+        // URLSearchParamsでデータをシリアライズ
+        const params = new URLSearchParams();
+        for (let key in data) {
+            params.append(key, data[key]);
         }
-    })
-    .catch(error => {
-        console.error('送信中にエラーが発生しました:', error);
-        alert('送信中にエラーが発生しました。');
-    });
-}
 
+        fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',  // 参考記事に基づき修正
+            },
+            body: params,  // URLSearchParamsを使用
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                alert('送信が完了しました。');
+                form.reset();
+                photoPreview.innerHTML = '';
+            } else {
+                alert('送信に失敗しました。再度お試しください。');
+            }
+        })
+        .catch(error => {
+            console.error('送信中にエラーが発生しました:', error);
+            alert('送信中にエラーが発生しました。');
+        });
+    }
 });
