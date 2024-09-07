@@ -40,19 +40,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const photoPreview = document.getElementById('photoPreview');
     const form = document.getElementById('foodDriveForm');
 
-    console.log("DOM Content Loaded: フォームの要素が正常に読み込まれました。");
-
     // 寄付者選択時の処理
     donatorSelect.addEventListener('change', function () {
         if (this.value === 'その他') {
             otherDonatorField.style.display = 'block';
             otherDonatorInput.required = true;
-            console.log("寄付者: その他が選択されました。");
         } else {
             otherDonatorField.style.display = 'none';
             otherDonatorInput.required = false;
             otherDonatorInput.value = '';
-            console.log(`寄付者: ${this.value} が選択されました。`);
         }
     });
 
@@ -65,12 +61,11 @@ document.addEventListener('DOMContentLoaded', function () {
             reader.onload = function (e) {
                 const img = document.createElement('img');
                 img.src = e.target.result;
+                img.style.maxWidth = '100px';
+                img.style.maxHeight = '100px';
                 photoPreview.appendChild(img);
-                console.log("画像が正常に読み込まれ、プレビューに表示されました。");
             };
             reader.readAsDataURL(file);
-        } else {
-            console.log("画像が選択されませんでした。");
         }
     });
 
@@ -78,28 +73,44 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        // 入力内容のダイジェストを取得
+        // 各入力値を取得
         const tweet = document.querySelector('input[name="tweet"]:checked').value === 'true' ? 'する' : 'しない';
         const donator = donatorSelect.value === 'その他' ? otherDonatorInput.value + '様' : donatorSelect.value + '様';
         const weight = document.getElementById('weight').value;
         const contents = document.getElementById('contents').value;
         const memo = document.getElementById('memo').value;
-        const photo = photoInput.files[0] ? photoInput.files[0].name : 'なし';
 
-        console.log("フォーム送信の確認:");
-        console.log(`Tweet: ${tweet}`);
-        console.log(`寄付者: ${donator}`);
-        console.log(`重量: ${weight}`);
-        console.log(`寄付内容: ${contents}`);
-        console.log(`メモ: ${memo}`);
-        console.log(`写真: ${photo}`);
+        const file = photoInput.files[0];
+        let base64Image = '';
 
-        // 確認ダイアログ
-        if (confirm("入力内容を確認してください。\nこれでよろしいですか？")) {
-            console.log("フォーム送信がユーザーによって承認されました。");
-            submitForm();
+        // ダイジェスト表示用テンプレート
+        const createSummary = (imageTag = '') => `
+            <div><strong>Tweet:</strong> ${tweet}</div>
+            <div><strong>寄付者:</strong> ${donator}</div>
+            <div><strong>重量:</strong> ${weight} kg</div>
+            <div><strong>寄付内容:</strong> ${contents}</div>
+            <div><strong>メモ:</strong> ${memo}</div>
+            <div><strong>写真:</strong> ${imageTag ? imageTag : 'なし'}</div>
+        `;
+
+        // 画像がある場合はBase64に変換し、サムネイルを作成
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                base64Image = e.target.result;
+                const imgTag = `<img src="${base64Image}" style="max-width:100px; max-height:100px;" alt="写真プレビュー">`;
+
+                // 確認ダイアログにサムネイル付きで表示
+                if (confirm(`入力内容を確認してください。\n${createSummary(imgTag)}\nこれでよろしいですか？`)) {
+                    submitForm();
+                }
+            };
+            reader.readAsDataURL(file); // HEIC, JPEG, PNGをサポート
         } else {
-            console.log("フォーム送信がキャンセルされました。");
+            // 画像がない場合の確認ダイアログ
+            if (confirm(`入力内容を確認してください。\n${createSummary()}\nこれでよろしいですか？`)) {
+                submitForm();
+            }
         }
     });
 
@@ -107,36 +118,27 @@ document.addEventListener('DOMContentLoaded', function () {
     function submitForm() {
         const formData = new FormData(form);
 
-        // 画像ファイルをBase64に変換
+        // 画像ファイルをBase64に変換して追加
         const file = photoInput.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = function () {
                 const base64Image = reader.result.split(',')[1];
                 formData.append('photo', base64Image);
-                formData.append('inputter', displayName);  // ユーザー名を追加
-                console.log("画像がBase64に変換されました。");
                 sendData(Object.fromEntries(formData));
             };
             reader.readAsDataURL(file);
         } else {
-            formData.append('inputter', displayName);  // ユーザー名を追加
-            console.log("画像が添付されていない状態で送信されます。");
             sendData(Object.fromEntries(formData));
         }
     }
 
-    // データ送信
+    // データ送信処理
     function sendData(data) {
-        // GASのWebアプリURLを設定
         const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
-        console.log("データ送信中...");
         fetch(GAS_WEB_APP_URL, {
             method: 'POST',
-            mode: 'cors',
-            cache: 'no-cache',
-            credentials: 'omit',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -148,14 +150,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 alert('送信が完了しました。');
                 form.reset();
                 photoPreview.innerHTML = '';
-                console.log("フォームデータが正常に送信されました。");
             } else {
                 alert('送信に失敗しました。再度お試しください。');
-                console.log("エラーが発生しました:", result);
             }
         })
         .catch(error => {
-            console.error('データ送信中にエラーが発生しました:', error);
+            console.error('送信中にエラーが発生しました:', error);
             alert('送信中にエラーが発生しました。');
         });
     }
