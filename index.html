@@ -2,14 +2,52 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <title>フードドライブ入庫</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* モーダルの基本スタイル */
+        .modal {
+            display: none; /* デフォルトは非表示 */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <img id="logo" src="https://raw.githubusercontent.com/jumps710/foodbank-drive/main/rgb_02_fs(2).jpg" alt="ロゴ">
-        <h1>フードドライブ入庫</h1>
+        <h1 style="font-size: 24px;">フードドライブ入庫</h1> <!-- タイトル文字を小さく -->
         <form id="foodDriveForm">
             <!-- 設問1: tweetする/しない -->
             <div class="form-group">
@@ -46,7 +84,7 @@
             <!-- 設問3: 重量 -->
             <div class="form-group">
                 <label for="weight">重量 (kg):</label>
-                <input type="number" id="weight" name="weight" step="0.1" min="0" required placeholder="例: 0.1">
+                <input type="text" id="weight" name="weight" required placeholder="例: 0.1">
             </div>
 
             <!-- 設問4: 寄付内容 -->
@@ -56,25 +94,17 @@
             </div>
 
             <!-- 設問5: メモ -->
-<!-- メモ欄を最初は非表示に設定 -->
-<div class="form-group" id="memoField" style="display:none;">
-    <label for="memo">メモ:</label>
-    <textarea id="memo" name="memo" rows="4" placeholder="補足事項があれば入力してください"></textarea>
-</div>
-<button type="button" id="addMemoBtn">メモを追記する</button>
-
-<script>
-document.getElementById('addMemoBtn').addEventListener('click', function() {
-    document.getElementById('memoField').style.display = 'block';
-    this.style.display = 'none'; // ボタンを隠す
-});
-</script>
-
+            <!-- メモ欄を最初は非表示に設定 -->
+            <div class="form-group" id="memoField" style="display:none;">
+                <label for="memo">メモ:</label>
+                <textarea id="memo" name="memo" rows="4" placeholder="補足事項があれば入力してください"></textarea>
+            </div>
+            <button type="button" id="addMemoBtn">メモを追記する</button>
 
             <!-- 設問6: 写真 -->
             <div class="form-group">
                 <label for="photo">写真:</label>
-                <input type="file" id="photo" name="photo" accept="image/*" capture="camera">
+                <input type="file" id="photo" name="photo" accept="image/*">
                 <div id="photoPreview"></div>
             </div>
 
@@ -86,20 +116,72 @@ document.getElementById('addMemoBtn').addEventListener('click', function() {
         </form>
     </div>
 
-
     <!-- モーダルのHTML構造 -->
-<div id="reviewModal" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h2>入力内容の確認</h2>
-    <div id="modalSummary"></div>
-    <button id="confirmSubmit">送信</button>
-  </div>
-</div>
-
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>入力内容の確認</h2>
+            <div id="modalSummary"></div>
+            <button id="confirmSubmit">送信</button>
+        </div>
+    </div>
 
     <!-- WOFF API を使用するためのスクリプト -->
     <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.6/sdk.js"></script>
     <script src="script.js"></script>
+
+    <script>
+        // メモ欄の表示切り替え
+        document.getElementById('addMemoBtn').addEventListener('click', function() {
+            document.getElementById('memoField').style.display = 'block';
+            this.style.display = 'none'; // ボタンを隠す
+        });
+
+        // 重量の全角数値を半角数値に変換
+        const weightInput = document.getElementById('weight');
+        weightInput.addEventListener('input', function () {
+            const value = weightInput.value;
+
+            // 全角数字を半角に変換
+            const halfWidthValue = value.replace(/[！-～]/g, function (ch) {
+                return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+            });
+
+            // 数値以外の文字が入った場合のエラーチェック
+            if (isNaN(halfWidthValue)) {
+                alert("数字だけ入力してください");
+                weightInput.value = ''; // エラーメッセージ表示後、フィールドをクリア
+            } else {
+                weightInput.value = halfWidthValue; // 半角数字に変換して再設定
+            }
+        });
+
+        // 入力内容のダイジェスト表示（モーダル内に表示）
+        function displayModalSummary(data) {
+            const modalSummary = document.getElementById('modalSummary');
+            modalSummary.innerHTML = `
+                <div><strong>Tweet:</strong> ${data.tweet}</div>
+                <div><strong>寄付者:</strong> ${data.donator}</div>
+                <div><strong>重量:</strong> ${data.weight} kg</div>
+                <div><strong>寄付内容:</strong> ${data.contents}</div>
+                <div><strong>メモ:</strong> ${data.memo}</div>
+                <div><strong>写真:</strong> <img src="${data.photo}" style="max-width: 100px;"></div>
+            `;
+
+            document.getElementById('reviewModal').style.display = 'block';
+        }
+
+        // モーダルを閉じる機能
+        const modal = document.getElementById("reviewModal");
+        const closeBtn = document.getElementsByClassName("close")[0];
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
 </body>
 </html>
