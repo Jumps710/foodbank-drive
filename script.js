@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function sendData(params) {
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIdZiP3KB3Tf6wMegdXXcorGE6E-djR3rewZLbBI2QBZa_VHYUrODRpdkO8jIhLvnD/exec';
 
         fetch(GAS_WEB_APP_URL, {
             method: 'POST',
