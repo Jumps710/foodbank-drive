@@ -42,6 +42,31 @@
             text-decoration: none;
             cursor: pointer;
         }
+
+        /* Googleフォーム風のスタイルをファイル選択ボタンに適用 */
+        .file-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .file-group input[type="file"] {
+            display: none; /* 隠す */
+        }
+
+        .file-group label {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .file-name {
+            margin-left: 10px;
+            font-size: 14px;
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -94,16 +119,20 @@
             </div>
 
             <!-- 設問5: メモ -->
-            <!-- メモ欄を通常表示に戻す -->
+            <!-- メモ欄のサイズを寄付内容と同じに -->
             <div class="form-group">
                 <label for="memo">メモ:</label>
-                <textarea id="memo" name="memo" rows="4" placeholder="補足事項があれば入力してください"></textarea>
+                <input type="text" id="memo" name="memo" placeholder="補足事項があれば入力してください">
             </div>
 
             <!-- 設問6: 写真 -->
             <div class="form-group">
                 <label for="photo">写真:</label>
-                <input type="file" id="photo" name="photo" accept="image/jpeg, image/png, image/heic"> <!-- capture="camera" を削除 -->
+                <div class="file-group">
+                    <label for="photo">ファイルを選択</label>
+                    <input type="file" id="photo" name="photo" accept="image/jpeg, image/png, image/heic">
+                    <span class="file-name" id="fileName">選択されていません</span>
+                </div>
                 <div id="photoPreview"></div>
             </div>
 
@@ -175,6 +204,19 @@
                 modal.style.display = "none";
             }
         }
+
+        // 写真のファイル名を表示
+        const photoInput = document.getElementById('photo');
+        const fileNameDisplay = document.getElementById('fileName');
+
+        photoInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (file) {
+                fileNameDisplay.textContent = file.name;
+            } else {
+                fileNameDisplay.textContent = '選択されていません';
+            }
+        });
     </script>
 </body>
 </html>
