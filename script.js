@@ -46,8 +46,19 @@ document.addEventListener('DOMContentLoaded', function () {
         params.append('contents', contents);
         params.append('memo', memo);
 
-        // データ送信
-        sendData(params);
+        // ファイルが選択されている場合、base64に変換して送信
+        const file = photoInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const base64Image = e.target.result.split(',')[1];  // base64部分を取得
+                params.append('photo', base64Image);  // base64データを追加
+                sendData(params);
+            };
+            reader.readAsDataURL(file);  // ファイルをbase64に変換
+        } else {
+            sendData(params);  // ファイルがない場合はそのまま送信
+        }
     });
 
     function sendData(params) {
