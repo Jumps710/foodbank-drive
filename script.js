@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const processingMessage = document.createElement('p');  // 処理中メッセージを作成
     processingMessage.innerText = "処理中・・・しばらくお待ちください";
     processingMessage.style.display = 'none';  // 初期状態では非表示
-    document.body.appendChild(processingMessage);  // メッセージをページに追加
+    processingMessage.style.color = 'red';  // メッセージを赤字で表示
+    confirmSubmit.parentNode.insertBefore(processingMessage, confirmSubmit.nextSibling);  // メッセージを送信ボタンの下に配置
 
     let displayName = '';  // WOFF APIで取得するユーザー名を保持する変数
 
@@ -167,8 +168,9 @@ document.addEventListener('DOMContentLoaded', function () {
             processingMessage.style.display = 'none';  // 処理中メッセージを非表示
             if (result.status === 'success') {
                 alert('送信が完了しました。');
-                form.reset();
-                hideModal();
+                form.reset();  // フォームをリセット
+                photoPreview.innerHTML = '';  // 写真プレビューをリセット
+                hideModal();  // モーダルを閉じる
             } else {
                 alert('送信に失敗しました。再度お試しください。');
             }
