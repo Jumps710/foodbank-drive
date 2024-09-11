@@ -6,26 +6,66 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalSummary = document.getElementById('modalSummary');
     const confirmSubmit = document.getElementById('confirmSubmit');
     const closeModal = document.getElementsByClassName('close')[0];
+    const photoPreview = document.getElementById('photoPreview');
 
-    console.log("ページ読み込み完了");  // ステップ1: ページが読み込まれた
+    let displayName = '';  // WOFF APIで取得するユーザー名を保持する変数
 
-    // ファイル選択後、ファイル名を表示
+    // WOFF初期化処理
+    const initializeWoff = () => {
+        woff
+            .init({
+                woffId: "Bv2kAkzN6gcZ0nD0brpMpg"
+            })
+            .then(() => {
+                console.log("WOFF APIが正常に初期化されました。");
+
+                if (!woff.isInClient()) {
+                    alert("この機能はLINE WORKSアプリ内でのみ使用できます。");
+                    return;
+                }
+
+                return woff.getProfile();
+            })
+            .then((profile) => {
+                if (profile) {
+                    displayName = profile.displayName;
+                    console.log("取得したユーザー名:", displayName);
+                }
+            })
+            .catch((err) => {
+                console.error("WOFF APIの初期化中にエラーが発生しました:", err.code, err.message);
+            });
+    };
+
+    // WOFF初期化の呼び出し
+    initializeWoff();
+
+    // ファイル選択後、ファイル名を表示し、画像プレビューを生成
     photoInput.addEventListener('change', function () {
-        const file = photoInput.files[0];
-        fileNameDisplay.textContent = file ? file.name : '選択されていません';
-        console.log("ファイル選択:", file ? file.name : 'ファイルが選択されていません');  // ステップ2: ファイルが選択された
+        fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '選択されていません';
+        photoPreview.innerHTML = '';
+
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.maxWidth = '100px';
+                photoPreview.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        }
     });
 
-    // モーダルを表示
+    // モーダル表示関数
     const showModal = (summary) => {
         modalSummary.innerHTML = summary;
         modal.style.display = 'block';
-        console.log("モーダルを表示:", summary);  // ステップ3: モーダルが表示された
     };
 
     const hideModal = () => {
         modal.style.display = 'none';
-        console.log("モーダルを閉じた");  // ステップ4: モーダルが閉じられた
     };
 
     closeModal.onclick = hideModal;
@@ -35,10 +75,44 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    // フォーム送信時のプレビュー画面表示処理
     form.addEventListener('submit', function (e) {
         e.preventDefault();
-        console.log("フォーム送信開始");  // ステップ5: フォーム送信が開始された
 
+        const tweet = document.querySelector('input[name="tweet"]:checked').value === 'true' ? 'する' : 'しない';
+        const donator = document.getElementById('donator').value === 'その他' ? document.getElementById('otherDonator').value + '様' : document.getElementById('donator').value + '様';
+        const weight = document.getElementById('weight').value;
+        const contents = document.getElementById('contents').value;
+        const memo = document.getElementById('memo').value;
+
+        const file = photoInput.files[0];
+        let base64Image = '';
+
+        const createSummary = (imageTag = '') => `
+            <div><strong>Tweet:</strong> ${tweet}</div>
+            <div><strong>寄付者:</strong> ${donator}</div>
+            <div><strong>重量:</strong> ${weight} kg</div>
+            <div><strong>寄付内容:</strong> ${contents}</div>
+            <div><strong>メモ:</strong> ${memo}</div>
+            <div><strong>ユーザー名:</strong> ${displayName}</div>  <!-- WOFF APIから取得したユーザー名を表示 -->
+            <div><strong>写真:</strong> ${imageTag ? imageTag : 'なし'}</div>
+        `;
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                base64Image = e.target.result;
+                const imgTag = `<img src="${base64Image}" style="max-width:100px;" alt="写真プレビュー">`;
+                showModal(createSummary(imgTag));
+            };
+            reader.readAsDataURL(file);
+        } else {
+            showModal(createSummary());
+        }
+    });
+
+    // モーダル内の確認ボタン押下時に送信処理を実行
+    confirmSubmit.addEventListener('click', function () {
         const tweet = document.querySelector('input[name="tweet"]:checked').value;
         const donator = document.getElementById('donator').value;
         const weight = document.getElementById('weight').value;
@@ -51,54 +125,47 @@ document.addEventListener('DOMContentLoaded', function () {
         params.append('weight', weight);
         params.append('contents', contents);
         params.append('memo', memo);
+        params.append('inputUser', displayName);  // WOFF APIで取得したdisplayNameを送信データに追加
 
-        console.log("送信データ:", { tweet, donator, weight, contents, memo });  // ステップ6: 送信データの表示
-
-        // ファイルが選択されている場合、base64に変換して送信
         const file = photoInput.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = function (e) {
-                const base64Image = e.target.result.split(',')[1];  // base64部分を取得
-                params.append('photo', base64Image);  // base64データを追加
-                console.log("画像がbase64に変換されました");  // ステップ7: 画像が変換された
+                const base64Image = e.target.result.split(',')[1];
+                params.append('photo', base64Image);
                 sendData(params);
             };
-            reader.readAsDataURL(file);  // ファイルをbase64に変換
+            reader.readAsDataURL(file);
         } else {
-            sendData(params);  // ファイルがない場合はそのまま送信
+            sendData(params);
         }
     });
 
     function sendData(params) {
         const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIdZiP3KB3Tf6wMegdXXcorGE6E-djR3rewZLbBI2QBZa_VHYUrODRpdkO8jIhLvnD/exec';
 
-        console.log("データ送信中...");  // ステップ8: データ送信開始
         fetch(GAS_WEB_APP_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Accept': 'application/json'
             },
-            body: params,  // URLSearchParamsでデータを送信
+            body: params,
             redirect: 'follow'
         })
         .then(response => response.json())
         .then(result => {
-            console.log("送信結果:", result);  // ステップ9: サーバーからの応答を表示
             if (result.status === 'success') {
                 alert('送信が完了しました。');
                 form.reset();
-                console.log("送信が成功し、フォームがリセットされました");  // ステップ10: 送信成功
+                hideModal();
             } else {
                 alert('送信に失敗しました。再度お試しください。');
-                console.log("送信が失敗しました");  // ステップ11: 送信失敗
             }
         })
         .catch(error => {
             console.error('送信中にエラーが発生しました:', error);
             alert('送信中にエラーが発生しました。');
-            console.log("送信エラー:", error);  // ステップ12: エラーが発生
         });
     }
 });
