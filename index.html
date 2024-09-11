@@ -1,87 +1,171 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-    <title>フードドライブ入庫</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="container">
-        <img id="logo" src="https://raw.githubusercontent.com/jumps710/foodbank-drive/main/rgb_02_fs(2).jpg" alt="ロゴ">
-        <h1>フードドライブ入庫</h1>
-        <form id="foodDriveForm" method="POST" enctype="multipart/form-data">
-            <div class="form-group">
-                <label>Tweet:</label>
-                <div class="radio-group">
-                    <input type="radio" id="tweetYes" name="tweet" value="true" required>
-                    <label for="tweetYes">する</label>
-                    <input type="radio" id="tweetNo" name="tweet" value="false" required>
-                    <label for="tweetNo">しない</label>
-                </div>
-            </div>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('foodDriveForm');
+    const photoInput = document.getElementById('photo');
+    const fileNameDisplay = document.getElementById('fileName');
+    const modal = document.getElementById('reviewModal');
+    const modalSummary = document.getElementById('modalSummary');
+    const confirmSubmit = document.getElementById('confirmSubmit');
+    const closeModal = document.getElementsByClassName('close')[0];
+    const photoPreview = document.getElementById('photoPreview');
 
-            <div class="form-group">
-                <label for="donator">寄付者:</label>
-                <select id="donator" name="donator" required>
-                    <option value="" disabled selected>選択してください</option>
-                    <option value="個人の皆">個人の皆</option>
-                    <option value="コープみらい">コープみらい</option>
-                    <option value="コープ市川店">コープ市川店</option>
-                    <option value="シャポーむすぶば">シャポーむすぶば</option>
-                    <option value="京葉ガスてらす">京葉ガスてらす</option>
-                    <option value="いちかわ社協">いちかわ社協</option>
-                    <option value="その他">その他</option>
-                </select>
-            </div>
-            
-            <div class="form-group" id="otherDonatorField" style="display:none;">
-                <label for="otherDonator">企業/団体名:</label>
-                <input type="text" id="otherDonator" name="otherDonator" placeholder="企業/団体名を入力してください">
-            </div>
+    let displayName = '';  // WOFF APIで取得するユーザー名を保持する変数
 
-            <div class="form-group">
-                <label for="weight">重量 (kg):</label>
-                <input type="text" id="weight" name="weight" required placeholder="例: 0.1">
-            </div>
+    // WOFF初期化処理
+    const initializeWoff = () => {
+        woff
+            .init({
+                woffId: "Bv2kAkzN6gcZ0nD0brpMpg"
+            })
+            .then(() => {
+                console.log("WOFF APIが正常に初期化されました。");
 
-            <div class="form-group">
-                <label for="contents">寄付内容:</label>
-                <input type="text" id="contents" name="contents" required placeholder="例: 缶詰、レトルト、お米10キロなど">
-            </div>
+                if (!woff.isInClient()) {
+                    alert("この機能はLINE WORKSアプリ内でのみ使用できます。");
+                    return;
+                }
 
-            <div class="form-group">
-                <label for="memo">メモ:</label>
-                <input type="text" id="memo" name="memo" placeholder="補足事項があれば入力してください">
-            </div>
+                return woff.getProfile();
+            })
+            .then((profile) => {
+                if (profile) {
+                    displayName = profile.displayName;
+                    console.log("取得したユーザー名:", displayName);
+                }
+            })
+            .catch((err) => {
+                console.error("WOFF APIの初期化中にエラーが発生しました:", err.code, err.message);
+            });
+    };
 
-            <div class="form-group">
-                <label for="photo">写真:</label>
-                <div class="file-group">
-                    <label for="photo" class="custom-file-label">ファイルを選択</label>
-                    <input type="file" id="photo" name="photo" accept="image/jpeg, image/png, image/heic" style="display: none;">
-                    <span class="file-name" id="fileName">選択されていません</span>
-                </div>
-                <div id="photoPreview"></div>
-            </div>
+    // WOFF初期化の呼び出し
+    initializeWoff();
 
-            <div class="button-group">
-                <button type="submit" id="submitBtn">送信</button>
-                <button type="reset" id="resetBtn">やり直し</button>
-            </div>
-        </form>
-    </div>
+    // ファイル選択後、ファイル名を表示し、画像プレビューを生成
+    photoInput.addEventListener('change', function () {
+        fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '選択されていません';
+        photoPreview.innerHTML = '';
 
-    <div id="reviewModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>入力内容の確認</h2>
-            <div id="modalSummary"></div>
-            <button id="confirmSubmit">送信</button>
-        </div>
-    </div>
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.maxWidth = '100px';
+                photoPreview.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
-    <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.6/sdk.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+    // モーダル表示関数
+    const showModal = (summary) => {
+        modalSummary.innerHTML = summary;
+        modal.style.display = 'block';
+    };
+
+    const hideModal = () => {
+        modal.style.display = 'none';
+    };
+
+    closeModal.onclick = hideModal;
+    window.onclick = (event) => {
+        if (event.target == modal) {
+            hideModal();
+        }
+    };
+
+    // フォーム送信時のプレビュー画面表示処理
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const tweet = document.querySelector('input[name="tweet"]:checked').value === 'true' ? 'する' : 'しない';
+        const donator = document.getElementById('donator').value === 'その他' ? document.getElementById('otherDonator').value + '様' : document.getElementById('donator').value + '様';
+        const weight = document.getElementById('weight').value;
+        const contents = document.getElementById('contents').value;
+        const memo = document.getElementById('memo').value;
+
+        const file = photoInput.files[0];
+        let base64Image = '';
+
+        const createSummary = (imageTag = '') => `
+            <div><strong>Tweet:</strong> ${tweet}</div>
+            <div><strong>寄付者:</strong> ${donator}</div>
+            <div><strong>重量:</strong> ${weight} kg</div>
+            <div><strong>寄付内容:</strong> ${contents}</div>
+            <div><strong>メモ:</strong> ${memo}</div>
+            <div><strong>ユーザー名:</strong> ${displayName}</div>  <!-- WOFF APIから取得したユーザー名を表示 -->
+            <div><strong>写真:</strong> ${imageTag ? imageTag : 'なし'}</div>
+        `;
+
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                base64Image = e.target.result;
+                const imgTag = `<img src="${base64Image}" style="max-width:100px;" alt="写真プレビュー">`;
+                showModal(createSummary(imgTag));
+            };
+            reader.readAsDataURL(file);
+        } else {
+            showModal(createSummary());
+        }
+    });
+
+    // モーダル内の確認ボタン押下時に送信処理を実行
+    confirmSubmit.addEventListener('click', function () {
+        const tweet = document.querySelector('input[name="tweet"]:checked').value;
+        const donator = document.getElementById('donator').value;
+        const weight = document.getElementById('weight').value;
+        const contents = document.getElementById('contents').value;
+        const memo = document.getElementById('memo').value;
+
+        const params = new URLSearchParams();
+        params.append('tweet', tweet);
+        params.append('donator', donator);
+        params.append('weight', weight);
+        params.append('contents', contents);
+        params.append('memo', memo);
+        params.append('inputUser', displayName);  // WOFF APIで取得したdisplayNameを送信データに追加
+
+        const file = photoInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const base64Image = e.target.result.split(',')[1];
+                params.append('photo', base64Image);
+                sendData(params);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            sendData(params);
+        }
+    });
+
+    function sendData(params) {
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIdZiP3KB3Tf6wMegdXXcorGE6E-djR3rewZLbBI2QBZa_VHYUrODRpdkO8jIhLvnD/exec';
+
+        fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            },
+            body: params,
+            redirect: 'follow'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                alert('送信が完了しました。');
+                form.reset();
+                hideModal();
+            } else {
+                alert('送信に失敗しました。再度お試しください。');
+            }
+        })
+        .catch(error => {
+            console.error('送信中にエラーが発生しました:', error);
+            alert('送信中にエラーが発生しました。');
+        });
+    }
+});
