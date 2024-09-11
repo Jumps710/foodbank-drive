@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const confirmSubmit = document.getElementById('confirmSubmit');
     const closeModal = document.getElementsByClassName('close')[0];
     const photoPreview = document.getElementById('photoPreview');
+    const processingMessage = document.createElement('p');  // 処理中メッセージを作成
+    processingMessage.innerText = "処理中・・・しばらくお待ちください";
+    processingMessage.style.display = 'none';  // 初期状態では非表示
+    document.body.appendChild(processingMessage);  // メッセージをページに追加
 
     let displayName = '';  // WOFF APIで取得するユーザー名を保持する変数
 
@@ -113,6 +117,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // モーダル内の確認ボタン押下時に送信処理を実行
     confirmSubmit.addEventListener('click', function () {
+        // 送信ボタンを非活性化し、処理中メッセージを表示
+        confirmSubmit.disabled = true;
+        processingMessage.style.display = 'block';
+
         const tweet = document.querySelector('input[name="tweet"]:checked').value;
         const donator = document.getElementById('donator').value;
         const weight = document.getElementById('weight').value;
@@ -155,6 +163,8 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(response => response.json())
         .then(result => {
+            confirmSubmit.disabled = false;  // 処理が完了したらボタンを再度活性化
+            processingMessage.style.display = 'none';  // 処理中メッセージを非表示
             if (result.status === 'success') {
                 alert('送信が完了しました。');
                 form.reset();
@@ -164,6 +174,8 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         })
         .catch(error => {
+            confirmSubmit.disabled = false;  // エラー時にもボタンを再度活性化
+            processingMessage.style.display = 'none';  // 処理中メッセージを非表示
             console.error('送信中にエラーが発生しました:', error);
             alert('送信中にエラーが発生しました。');
         });
