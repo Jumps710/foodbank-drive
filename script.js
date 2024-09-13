@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('foodDriveForm');
+    const donatorSelect = document.getElementById('donator');
+    const otherDonatorField = document.getElementById('otherDonatorField');
     const photoInput = document.getElementById('photo');
     const fileNameDisplay = document.getElementById('fileName');
     const modal = document.getElementById('reviewModal');
@@ -44,6 +46,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // WOFF初期化の呼び出し
     initializeWoff();
+
+    // 「その他」が選択された場合に企業/団体名の入力フィールドを表示
+    const toggleOtherDonatorField = () => {
+        if (donatorSelect.value === 'その他') {
+            otherDonatorField.style.display = 'block';
+        } else {
+            otherDonatorField.style.display = 'none';
+        }
+    };
+
+    // 初期状態でのフィールド表示制御
+    toggleOtherDonatorField();
+
+    // 寄付者が変更された時の処理
+    donatorSelect.addEventListener('change', toggleOtherDonatorField);
 
     // ファイル選択後、ファイル名を表示し、画像プレビューを生成
     photoInput.addEventListener('change', function () {
