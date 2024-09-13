@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
     confirmSubmit.parentNode.insertBefore(processingMessage, confirmSubmit.nextSibling);  // メッセージを送信ボタンの下に配置
 
     let displayName = '';  // WOFF APIで取得するユーザー名を保持する変数
+    let donatorForSubmit = ''; // 送信用のdonator名を保持する変数
 
     // WOFF初期化処理
     const initializeWoff = () => {
@@ -98,44 +99,44 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // フォーム送信時のプレビュー画面表示処理
-form.addEventListener('submit', function (e) {
-    e.preventDefault();
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
 
-    const tweet = document.querySelector('input[name="tweet"]:checked').value === 'true' ? 'する' : 'しない';
-    const donator = document.getElementById('donator').value === 'その他' 
-        ? document.getElementById('otherDonator').value + '様' 
-        : document.getElementById('donator').value + '様'; // 「その他」の場合、otherDonatorの値を使用
+        const tweet = document.querySelector('input[name="tweet"]:checked').value === 'true' ? 'する' : 'しない';
+        const donator = document.getElementById('donator').value === 'その他' 
+            ? document.getElementById('otherDonator').value + '様' 
+            : document.getElementById('donator').value + '様'; // 「その他」の場合、otherDonatorの値を使用
+        donatorForSubmit = donator;  // 送信用にdonator名を保持
 
-    const weight = document.getElementById('weight').value;
-    const contents = document.getElementById('contents').value;
-    const memo = document.getElementById('memo').value;
+        const weight = document.getElementById('weight').value;
+        const contents = document.getElementById('contents').value;
+        const memo = document.getElementById('memo').value;
 
-    const file = photoInput.files[0];
-    let base64Image = '';
+        const file = photoInput.files[0];
+        let base64Image = '';
 
-    const createSummary = (imageTag = '') => `
-        <div><strong>Tweet:</strong> ${tweet}</div>
-        <div><strong>寄付者:</strong> ${donator}</div>
-        <div><strong>重量:</strong> ${weight} kg</div>
-        <div><strong>寄付内容:</strong> ${contents}</div>
-        <div><strong>メモ:</strong> ${memo}</div>
-        <div><strong>ユーザー名:</strong> ${displayName}</div>  <!-- WOFF APIから取得したユーザー名を表示 -->
-        <div><strong>写真:</strong> ${imageTag ? imageTag : 'なし'}</div>
-    `;
+        const createSummary = (imageTag = '') => `
+            <div><strong>Tweet:</strong> ${tweet}</div>
+            <div><strong>寄付者:</strong> ${donator}</div>
+            <div><strong>重量:</strong> ${weight} kg</div>
+            <div><strong>寄付内容:</strong> ${contents}</div>
+            <div><strong>メモ:</strong> ${memo}</div>
+            <div><strong>ユーザー名:</strong> ${displayName}</div>  <!-- WOFF APIから取得したユーザー名を表示 -->
+            <div><strong>写真:</strong> ${imageTag ? imageTag : 'なし'}</div>
+        `;
 
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            base64Image = e.target.result;
-            const imgTag = `<img src="${base64Image}" style="max-width:100px;" alt="写真プレビュー">`;
-            showModal(createSummary(imgTag));
-        };
-        reader.readAsDataURL(file);
-    } else {
-        showModal(createSummary());
-    }
-});
-
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                base64Image = e.target.result;
+                const imgTag = `<img src="${base64Image}" style="max-width:100px;" alt="写真プレビュー">`;
+                showModal(createSummary(imgTag));
+            };
+            reader.readAsDataURL(file);
+        } else {
+            showModal(createSummary());
+        }
+    });
 
     // モーダル内の確認ボタン押下時に送信処理を実行
     confirmSubmit.addEventListener('click', function () {
@@ -144,14 +145,13 @@ form.addEventListener('submit', function (e) {
         processingMessage.style.display = 'block';
 
         const tweet = document.querySelector('input[name="tweet"]:checked').value;
-        const donator = document.getElementById('donator').value;
         const weight = document.getElementById('weight').value;
         const contents = document.getElementById('contents').value;
         const memo = document.getElementById('memo').value;
 
         const params = new URLSearchParams();
         params.append('tweet', tweet);
-        params.append('donator', donator);
+        params.append('donator', donatorForSubmit); // 送信用に保持したdonator名を使用
         params.append('weight', weight);
         params.append('contents', contents);
         params.append('memo', memo);
