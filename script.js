@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then((profile) => {
                 if (profile) {
                     displayName = profile.displayName;
+                    userId = profile.userId;
                     console.log("取得したユーザー名:", displayName);
                 }
             })
@@ -160,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
         params.append('contents', contents);
         params.append('memo', memo);
         params.append('inputUser', displayName);  // WOFF APIで取得したdisplayNameを送信データに追加
+        params.append('inputUserId', userId);  // WOFF APIで取得したdisplayNameIdを送信データに追加
 
         const file = photoInput.files[0];
         if (file) {
