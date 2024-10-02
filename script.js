@@ -18,6 +18,27 @@ document.addEventListener('DOMContentLoaded', function () {
     let displayName = '';  // WOFF APIで取得するユーザー名を保持する変数
     let donatorForSubmit = ''; // 送信用のdonator名を保持する変数
 
+
+// クエリパラメータをコンソールに表示する
+function logQueryParameters() {
+    const params = new URLSearchParams(window.location.search);
+    const queryObject = {};
+
+    params.forEach((value, key) => {
+        queryObject[key] = value;
+    });
+
+    console.log("Query Parameters:", queryObject);
+}
+
+// ページが読み込まれたときにクエリパラメータをログに記録する
+document.addEventListener('DOMContentLoaded', function () {
+    logQueryParameters();
+});
+
+
+
+    
     // WOFF初期化処理
     const initializeWoff = () => {
         woff
