@@ -18,38 +18,32 @@ document.addEventListener('DOMContentLoaded', function () {
     let displayName = '';  // WOFF APIで取得するユーザー名を保持する変数
     let donatorForSubmit = ''; // 送信用のdonator名を保持する変数
 
+    // クエリパラメータやURLフラグメントをコンソールに表示する関数
+    function logQueryParametersAndFragment() {
+        console.log("logQueryParametersAndFragment function executed."); // これを追加
 
-// クエリパラメータやURLフラグメントをコンソールに表示する関数
-function logQueryParametersAndFragment() {
-    console.log("logQueryParametersAndFragment function executed."); // これを追加
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams(url.search);
+        const fragment = window.location.hash;
 
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams(url.search);
-    const fragment = window.location.hash;
+        const queryObject = {};
+        params.forEach((value, key) => {
+            queryObject[key] = value;
+        });
 
-    const queryObject = {};
-    params.forEach((value, key) => {
-        queryObject[key] = value;
-    });
+        console.log("クエリパラメータ:", queryObject);
+        console.log("URLフラグメント:", fragment);
 
-    console.log("クエリパラメータ:", queryObject);
-    console.log("URLフラグメント:", fragment);
+        // クエリパラメータとフラグメントをページに表示
+        document.body.insertAdjacentHTML('beforeend', `
+            <pre>クエリパラメータ: ${JSON.stringify(queryObject, null, 2)}</pre>
+            <pre>URLフラグメント: ${fragment}</pre>
+        `);
+    }
 
-    // クエリパラメータとフラグメントをページに表示
-    document.body.insertAdjacentHTML('beforeend', `
-        <pre>クエリパラメータ: ${JSON.stringify(queryObject, null, 2)}</pre>
-        <pre>URLフラグメント: ${fragment}</pre>
-    `);
-}
+    // 初期化前にクエリパラメータを取得
+    logQueryParametersAndFragment();
 
-// DOMが読み込まれたときにクエリパラメータやフラグメントをログに記録する
-document.addEventListener('DOMContentLoaded', logQueryParametersAndFragment);
-
-
-
-
-
-    
     // WOFF初期化処理
     const initializeWoff = () => {
         woff
@@ -158,7 +152,7 @@ document.addEventListener('DOMContentLoaded', logQueryParametersAndFragment);
             <div><strong>重量:</strong> ${weight} kg</div>
             <div><strong>寄付内容:</strong> ${contents}</div>
             <div><strong>メモ:</strong> ${memo}</div>
-            <div><strong>ユーザー名:</strong> ${displayName}</div>  <!-- WOFF APIから取得したユーザー名を表示 -->
+            <div><strong>ユーザー名:</strong> ${displayName}</div>
             <div><strong>写真:</strong> ${imageTag ? imageTag : 'なし'}</div>
         `;
 
@@ -188,12 +182,12 @@ document.addEventListener('DOMContentLoaded', logQueryParametersAndFragment);
 
         const params = new URLSearchParams();
         params.append('tweet', tweet);
-        params.append('donator', donatorForSubmit); // 送信用に保持したdonator名をそのまま使用
+        params.append('donator', donatorForSubmit);
         params.append('weight', weight);
         params.append('contents', contents);
         params.append('memo', memo);
-        params.append('inputUser', displayName);  // WOFF APIで取得したdisplayNameを送信データに追加
-        params.append('inputUserId', userId);  // WOFF APIで取得したdisplayNameIdを送信データに追加
+        params.append('inputUser', displayName);
+        params.append('inputUserId', userId);
 
         const file = photoInput.files[0];
         if (file) {
@@ -227,16 +221,16 @@ document.addEventListener('DOMContentLoaded', logQueryParametersAndFragment);
             processingMessage.style.display = 'none';  // 処理中メッセージを非表示
             if (result.status === 'success') {
                 alert('送信が完了しました。');
-                form.reset();  // フォームをリセット
-                photoPreview.innerHTML = '';  // 写真プレビューをリセット
-                hideModal();  // モーダルを閉じる
+                form.reset();
+                photoPreview.innerHTML = '';
+                hideModal();
             } else {
                 alert('送信に失敗しました。再度お試しください。');
             }
         })
         .catch(error => {
-            confirmSubmit.disabled = false;  // エラー時にもボタンを再度活性化
-            processingMessage.style.display = 'none';  // 処理中メッセージを非表示
+            confirmSubmit.disabled = false;
+            processingMessage.style.display = 'none';
             console.error('送信中にエラーが発生しました:', error);
             alert('送信中にエラーが発生しました。');
         });
