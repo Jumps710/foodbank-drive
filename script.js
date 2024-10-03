@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // クエリパラメータやURLフラグメントをコンソールに表示する関数
 function logQueryParametersAndFragment() {
+    console.log("logQueryParametersAndFragment function executed."); // これを追加
+
     const url = new URL(window.location.href);
     const params = new URLSearchParams(url.search);
     const fragment = window.location.hash;
@@ -42,6 +44,7 @@ function logQueryParametersAndFragment() {
 
 // DOMが読み込まれたときにクエリパラメータやフラグメントをログに記録する
 document.addEventListener('DOMContentLoaded', logQueryParametersAndFragment);
+
 
 
 
