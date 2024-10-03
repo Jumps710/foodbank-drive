@@ -19,22 +19,30 @@ document.addEventListener('DOMContentLoaded', function () {
     let donatorForSubmit = ''; // 送信用のdonator名を保持する変数
 
 
-// クエリパラメータをコンソールに表示する
-function logQueryParameters() {
-    const params = new URLSearchParams(window.location.search);
-    const queryObject = {};
+// クエリパラメータやURLフラグメントをコンソールに表示する関数
+function logQueryParametersAndFragment() {
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+    const fragment = window.location.hash;
 
+    const queryObject = {};
     params.forEach((value, key) => {
         queryObject[key] = value;
     });
 
-    console.log("Query Parameters:", queryObject);
+    console.log("クエリパラメータ:", queryObject);
+    console.log("URLフラグメント:", fragment);
+
+    // クエリパラメータとフラグメントをページに表示
+    document.body.insertAdjacentHTML('beforeend', `
+        <pre>クエリパラメータ: ${JSON.stringify(queryObject, null, 2)}</pre>
+        <pre>URLフラグメント: ${fragment}</pre>
+    `);
 }
 
-// ページが読み込まれたときにクエリパラメータをログに記録する
-document.addEventListener('DOMContentLoaded', function () {
-    logQueryParameters();
-});
+// DOMが読み込まれたときにクエリパラメータやフラグメントをログに記録する
+document.addEventListener('DOMContentLoaded', logQueryParametersAndFragment);
+
 
 
 
