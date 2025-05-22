@@ -91,18 +91,24 @@ document.addEventListener('DOMContentLoaded', function () {
         fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '選択されていません';
         photoPreview.innerHTML = '';
 
-const file = photoInput.files[0];
-if (file) {
-  resizeAndConvertToBase64(file, function (base64Image) {
-    params.append('photo', base64Image);
-    sendData(params);
-  });
-} else {
-  sendData(params);
-}
+// ✅ 安全な photoInput.change イベント
+photoInput.addEventListener('change', function () {
+    fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '選択されていません';
+    photoPreview.innerHTML = '';
 
-        }
-    });
+    const file = this.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.maxWidth = '100px';
+            photoPreview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
 
     // モーダル表示関数
     const showModal = (summary) => {
