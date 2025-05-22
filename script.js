@@ -91,12 +91,15 @@ document.addEventListener('DOMContentLoaded', function () {
         fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '選択されていません';
         photoPreview.innerHTML = '';
 
-        const file = this.files[0];
-        if (file) {
-resizeAndConvertToBase64(file, function(base64Image) {
-  params.append('photo', base64Image);
+const file = photoInput.files[0];
+if (file) {
+  resizeAndConvertToBase64(file, function (base64Image) {
+    params.append('photo', base64Image);
+    sendData(params);
+  });
+} else {
   sendData(params);
-});
+}
 
         }
     });
