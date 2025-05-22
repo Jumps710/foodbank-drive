@@ -199,6 +199,46 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    function resizeAndConvertToBase64(file, callback) {
+  const img = new Image();
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+    img.src = e.target.result;
+  };
+
+  img.onload = function () {
+    const canvas = document.createElement("canvas");
+    const MAX_SIZE = 1000;
+    let width = img.width;
+    let height = img.height;
+
+    if (width > height && width > MAX_SIZE) {
+      height *= MAX_SIZE / width;
+      width = MAX_SIZE;
+    } else if (height > MAX_SIZE) {
+      width *= MAX_SIZE / height;
+      height = MAX_SIZE;
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, width, height);
+
+    canvas.toBlob((blob) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result.split(',')[1];
+        callback(base64);
+      };
+      reader.readAsDataURL(blob);
+    }, 'image/jpeg', 0.7); // JPEGで70%圧縮
+  };
+
+  reader.readAsDataURL(file);
+}
+
     function sendData(params) {
         const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIdZiP3KB3Tf6wMegdXXcorGE6E-djR3rewZLbBI2QBZa_VHYUrODRpdkO8jIhLvnD/exec';
 
