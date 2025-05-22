@@ -86,11 +86,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // 寄付者が変更された時に即座に「その他」のフィールドを表示/非表示に
     donatorSelect.addEventListener('change', toggleOtherDonatorField);
 
-    // ファイル選択後、ファイル名を表示し、画像プレビューを生成
-    photoInput.addEventListener('change', function () {
-        fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '選択されていません';
-        photoPreview.innerHTML = '';
-
 photoInput.addEventListener('change', function () {
     fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '選択されていません';
     photoPreview.innerHTML = '';
