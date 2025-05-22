@@ -91,7 +91,6 @@ document.addEventListener('DOMContentLoaded', function () {
         fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '選択されていません';
         photoPreview.innerHTML = '';
 
-// ✅ 安全な photoInput.change イベント
 photoInput.addEventListener('change', function () {
     fileNameDisplay.textContent = this.files[0] ? this.files[0].name : '選択されていません';
     photoPreview.innerHTML = '';
@@ -108,6 +107,7 @@ photoInput.addEventListener('change', function () {
         reader.readAsDataURL(file);
     }
 });
+
 
 
     // モーダル表示関数
