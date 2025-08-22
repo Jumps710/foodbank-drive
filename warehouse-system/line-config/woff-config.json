@@ -1,0 +1,48 @@
+{
+  "woff": {
+    "id": "z-vHKyt_a0GkVpsS9j46NQ",
+    "url": "https://woff.worksmobile.com/woff/z-vHKyt_a0GkVpsS9j46NQ",
+    "name": "フードバンク倉庫システム（スタッフ用）",
+    "description": "フードバンク倉庫への食品リクエスト管理システム - スタッフ・配送業者向け",
+    "endpoint_url": "https://jumps710.github.io/foodbank/warehouse/",
+    "scope": [
+      "profile",
+      "openid"
+    ],
+    "view": {
+      "type": "full",
+      "url": "https://jumps710.github.io/foodbank/warehouse/"
+    },
+    "features": {
+      "ble": false,
+      "qr": false
+    },
+    "permanent_link_pattern": "concat",
+    "subwindow_size": {
+      "desktop": "full",
+      "mobile": "full"
+    }
+  },
+  "target_users": [
+    "staff",
+    "driver"
+  ],
+  "default_routes": {
+    "staff": "#/table",
+    "driver": "#/table"
+  },
+  "access_permissions": {
+    "staff": {
+      "request_form": false,
+      "request_table": true,
+      "request_details": true,
+      "dashboard": true
+    },
+    "driver": {
+      "request_form": false,
+      "request_table": true,
+      "request_details": true,
+      "dashboard": false
+    }
+  }
+}

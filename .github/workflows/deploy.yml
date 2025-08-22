@@ -1,0 +1,57 @@
+name: Auto Deploy to GAS
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Clasp
+      run: npm install -g @google/clasp
+      
+    - name: Setup Clasp credentials
+      env:
+        CLASP_CREDENTIALS: ${{ secrets.CLASP_CREDENTIALS }}
+        CLASP_TOKEN: ${{ secrets.CLASP_TOKEN }}
+      run: |
+        mkdir -p ~/.config/@google/clasp
+        echo "$CLASP_CREDENTIALS" > ~/.config/@google/clasp/credentials.json
+        echo "$CLASP_TOKEN" > ~/.config/@google/clasp/token.json
+        
+    - name: Deploy to Google Apps Script
+      run: |
+        cd gas-project
+        npx clasp push --force
+        npx clasp deploy --description "GitHub Actions Auto Deploy - $(date)"
+        
+    - name: Get deployment info
+      id: deploy-info
+      run: |
+        cd gas-project
+        SCRIPT_ID=$(grep -o '"scriptId": "[^"]*"' .clasp.json | cut -d'"' -f4)
+        echo "script_id=$SCRIPT_ID" >> $GITHUB_OUTPUT
+        echo "deploy_url=https://script.google.com/macros/s/$SCRIPT_ID/exec" >> $GITHUB_OUTPUT
+        
+    - name: Update deployment status
+      run: |
+        echo "🚀 Deployment successful!"
+        echo "📄 Script ID: ${{ steps.deploy-info.outputs.script_id }}"
+        echo "🌐 Deploy URL: ${{ steps.deploy-info.outputs.deploy_url }}"

@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理ダッシュボード - フードパントリー管理システム</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .sidebar .nav-link {
+            color: #495057;
+            border-radius: 5px;
+            margin: 2px 0;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar">
+                <div class="position-sticky">
+                    <h5 class="text-center mb-4">
+                        <i class="bi bi-heart-fill text-danger me-2"></i>
+                        管理システム
+                    </h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" data-page="dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i>ダッシュボード
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="pantries">
+                                <i class="bi bi-calendar-event me-2"></i>パントリー管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="reservations">
+                                <i class="bi bi-list-check me-2"></i>予約状況
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="users">
+                                <i class="bi bi-people me-2"></i>ユーザー管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="logs">
+                                <i class="bi bi-file-text me-2"></i>ログ管理
+                            </a>
+                        </li>
+                        <hr>
+                        <li class="nav-item">
+                            <a class="nav-link" href="index.html">
+                                <i class="bi bi-house me-2"></i>メインサイト
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="#" onclick="logout()">
+                                <i class="bi bi-box-arrow-right me-2"></i>ログアウト
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
+                <div id="pageContent">
+                    <!-- コンテンツがここに動的に読み込まれます -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- モーダル -->
+    <div class="modal fade" id="actionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">タイトル</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- モーダル内容 -->
+                </div>
+                <div class="modal-footer" id="modalFooter">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/firebase-config-simple.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        // ページ管理
+        let currentPage = 'dashboard';
+        let modalInstance = null;
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            modalInstance = new bootstrap.Modal(document.getElementById('actionModal'));
+            
+            // Firebase認証状態をチェック
+            if (window.firebaseAuthManager) {
+                window.firebaseAuthManager.onAuthStateChanged = function(user) {
+                    if (user) {
+                        // Firebase認証済み - ダッシュボードを表示
+                        console.log('Firebase認証済みユーザー:', user.email || user.displayName);
+                        loadPage('dashboard');
+                        setupNavigation();
+                    } else {
+                        // 未認証 - ログインフォームを表示
+                        showLoginForm();
+                    }
+                };
+                
+                // Googleリダイレクト結果をチェック
+                setTimeout(async () => {
+                    try {
+                        const redirectResult = await window.firebaseAuthManager.getRedirectResult();
+                        if (redirectResult.success && redirectResult.user) {
+                            console.log('Google リダイレクト サインイン成功:', redirectResult.user.email);
+                            if (redirectResult.isNewUser) {
+                                alert('Googleアカウントで新規登録しました！');
+                            } else {
+                                alert('Googleアカウントでログインしました！');
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('リダイレクト結果確認エラー:', error);
+                    }
+                    
+                    // 認証状態をチェック
+                    if (window.firebaseAuthManager.getCurrentUser()) {
+                        loadPage('dashboard');
+                        setupNavigation();
+                    } else {
+                        showLoginForm();
+                    }
+                }, 1000);
+            } else {
+                showLoginForm();
+            }
+        });
+
+        // ナビゲーション設定
+        function setupNavigation() {
+            document.querySelectorAll('.sidebar .nav-link[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute('data-page');
+                    loadPage(page);
+                    
+                    // アクティブクラス更新
+                    document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
+
+        // ページ読み込み
+        async function loadPage(page) {
+            currentPage = page;
+            const content = document.getElementById('pageContent');
+            content.innerHTML = '<div class="loading"><div class="spinner-border"></div><p>読み込み中...</p></div>';
+            
+            try {
+                switch (page) {
+                    case 'dashboard':
+                        await loadDashboard();
+                        break;
+                    case 'pantries':
+                        await loadPantries();
+                        break;
+                    case 'reservations':
+                        await loadReservations();
+                        break;
+                    case 'users':
+                        await loadUsers();
+                        break;
+                    case 'logs':
+                        await loadLogs();
+                        break;
+                    default:
+                        content.innerHTML = '<div class="alert alert-danger">ページが見つかりません</div>';
+                }
+            } catch (error) {
+                content.innerHTML = '<div class="alert alert-danger">データの読み込みに失敗しました: ' + handleApiError(error) + '</div>';
+            }
+        }
+
+        // ダッシュボード読み込み
+        async function loadDashboard() {
+            const stats = await apiClient.getStatistics();
+            const pantries = await apiClient.adminGetPantries();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">ダッシュボード</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadPage('dashboard')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.success ? stats.data.totalUsers || 0 : 0}</div>
+                            <div>総利用者数</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number">${stats.success ? stats.data.totalReservations || 0 : 0}</div>
+                            <div>総予約数</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number">${pantries.success ? pantries.data.filter(p => p.status === 'active').length : 0}</div>
+                            <div>アクティブイベント</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="stat-number">${pantries.success ? pantries.data.length : 0}</div>
+                            <div>総イベント数</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="table-container">
+                            <h5>最近のイベント</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>日時</th>
+                                            <th>場所</th>
+                                            <th>ステータス</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${pantries.success ? pantries.data.slice(0, 5).map(p => `
+                                            <tr>
+                                                <td>${formatDate(p.event_date)}</td>
+                                                <td>${p.location}</td>
+                                                <td><span class="badge bg-${getStatusColor(p.status)}">${getStatusText(p.status)}</span></td>
+                                            </tr>
+                                        `).join('') : '<tr><td colspan="3">データなし</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="table-container">
+                            <h5>システム情報</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>最終更新:</strong> ${new Date().toLocaleString('ja-JP')}</li>
+                                <li><strong>システムバージョン:</strong> v2.0</li>
+                                <li><strong>データベース:</strong> Google Sheets</li>
+                                <li><strong>ホスティング:</strong> GitHub Pages</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // パントリー管理読み込み
+        async function loadPantries() {
+            const pantries = await apiClient.adminGetPantries();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">パントリー管理</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-primary" onclick="showCreatePantryForm()">
+                                <i class="bi bi-plus"></i> 新規作成
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadPage('pantries')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>イベントID</th>
+                                    <th>開催日時</th>
+                                    <th>場所</th>
+                                    <th>定員</th>
+                                    <th>予約数</th>
+                                    <th>ステータス</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${pantries.success ? pantries.data.map(p => `
+                                    <tr>
+                                        <td>${p.pantry_id}</td>
+                                        <td>${formatDate(p.event_date)} ${p.event_time || ''}</td>
+                                        <td>${p.location}</td>
+                                        <td>${p.capacity_total || 0}</td>
+                                        <td>${p.reservation_count || 0}</td>
+                                        <td><span class="badge bg-${getStatusColor(p.status)}">${getStatusText(p.status)}</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editPantry('${p.pantry_id}')">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deletePantry('${p.pantry_id}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="7">データがありません</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // 予約状況読み込み
+        async function loadReservations() {
+            const reservations = await apiClient.adminGetReservations();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">予約状況</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadPage('reservations')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>予約ID</th>
+                                    <th>氏名</th>
+                                    <th>イベント</th>
+                                    <th>予約日時</th>
+                                    <th>ステータス</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${reservations.success ? reservations.data.map(r => `
+                                    <tr>
+                                        <td>${r.reservation_id}</td>
+                                        <td>${r.name_kana}</td>
+                                        <td>${r.pantry_id}</td>
+                                        <td>${formatDateTime(r.created_at)}</td>
+                                        <td><span class="badge bg-${getStatusColor(r.status)}">${getStatusText(r.status)}</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewReservation('${r.reservation_id}')">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="cancelReservation('${r.reservation_id}')">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="6">データがありません</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // ユーザー管理読み込み
+        async function loadUsers() {
+            const users = await apiClient.adminGetUsers();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">ユーザー管理</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadPage('users')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>氏名</th>
+                                    <th>地域</th>
+                                    <th>世帯人数</th>
+                                    <th>利用回数</th>
+                                    <th>最終利用日</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${users.success ? users.data.map(u => `
+                                    <tr>
+                                        <td>${u.name_kana}</td>
+                                        <td>${u.area || '-'}</td>
+                                        <td>${(u.household_adults || 0) + (u.household_children || 0)}人</td>
+                                        <td>${u.total_visits || 0}回</td>
+                                        <td>${formatDate(u.last_visit_date) || '-'}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewUser('${u.user_id}')">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="6">データがありません</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // ログ管理読み込み
+        async function loadLogs() {
+            const logs = await apiClient.adminGetLogs();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">ログ管理</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-primary" onclick="exportLogs()">
+                                <i class="bi bi-download"></i> エクスポート
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadPage('logs')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>日時</th>
+                                    <th>イベントタイプ</th>
+                                    <th>ユーザー</th>
+                                    <th>詳細</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${logs.success ? logs.data.map(l => `
+                                    <tr>
+                                        <td>${formatDateTime(l.created_at)}</td>
+                                        <td><span class="badge bg-secondary">${l.event_type}</span></td>
+                                        <td>${l.user_name_kana || '-'}</td>
+                                        <td>${l.event_detail}</td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="4">データがありません</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // ログイン画面表示
+        function showLoginForm() {
+            const content = `
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header text-center">
+                                <h4 id="authTitle">管理者ログイン</h4>
+                                <div class="btn-group w-100 mt-2" role="group">
+                                    <button type="button" class="btn btn-outline-primary active" onclick="showLogin()">ログイン</button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="showRegister()">新規作成</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <form id="authForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">メールアドレス</label>
+                                        <input type="email" class="form-control" name="email" required placeholder="admin@foodbank.local">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">パスワード</label>
+                                        <input type="password" class="form-control" name="password" required>
+                                    </div>
+                                    <div class="mb-3" id="confirmPasswordGroup" style="display: none;">
+                                        <label class="form-label">パスワード確認</label>
+                                        <input type="password" class="form-control" name="confirmPassword">
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary" id="authButton">ログイン</button>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="text-center">
+                                            <span class="text-muted">または</span>
+                                        </div>
+                                        <div class="d-grid mt-2">
+                                            <button type="button" class="btn btn-outline-danger" onclick="signInWithGoogle()">
+                                                <i class="bi bi-google me-2"></i>Googleでサインイン
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <small class="text-muted" id="authHelp">
+                                            Firebase Authenticationを使用します。<br>
+                                            既存の管理者アカウントでログインしてください。
+                                        </small>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            
+            // フォーム送信イベント
+            document.getElementById('authForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const credentials = Object.fromEntries(formData.entries());
+                const isRegister = document.getElementById('authButton').textContent === 'アカウント作成';
+                
+                // パスワード確認チェック（新規作成時）
+                if (isRegister && credentials.password !== credentials.confirmPassword) {
+                    alert('パスワードが一致しません');
+                    return;
+                }
+                
+                try {
+                    // Firebase設定が読み込まれるまで待機
+                    if (!window.firebaseAuthManager) {
+                        alert('Firebase認証システムが読み込まれていません。ページを再読み込みしてください。');
+                        return;
+                    }
+                    
+                    if (isRegister) {
+                        // アカウント作成
+                        const authResult = await window.firebaseAuthManager.createUserWithEmailAndPassword(
+                            credentials.email, 
+                            credentials.password
+                        );
+                        
+                        if (authResult.success) {
+                            alert('アカウントが作成されました！ログインします...');
+                            location.reload();
+                        } else {
+                            alert('アカウント作成に失敗しました: ' + authResult.error.message);
+                        }
+                    } else {
+                        // ログイン
+                        const authResult = await window.firebaseAuthManager.signInWithEmailAndPassword(
+                            credentials.email, 
+                            credentials.password
+                        );
+                        
+                        if (authResult.success) {
+                            alert('ログインしました！');
+                            location.reload();
+                        } else {
+                            alert('ログインに失敗しました: ' + authResult.error.message);
+                        }
+                    }
+                } catch (error) {
+                    console.error('認証エラー:', error);
+                    alert('エラー: ' + (error.message || handleApiError(error)));
+                }
+            });
+        }
+
+        // ログインモードに切り替え
+        function showLogin() {
+            document.getElementById('authTitle').textContent = '管理者ログイン';
+            document.getElementById('authButton').textContent = 'ログイン';
+            document.getElementById('confirmPasswordGroup').style.display = 'none';
+            document.getElementById('authHelp').innerHTML = 
+                'Firebase Authenticationを使用します。<br>既存の管理者アカウントでログインしてください。';
+            
+            // ボタンのactive状態を更新
+            document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // 新規作成モードに切り替え
+        function showRegister() {
+            document.getElementById('authTitle').textContent = '管理者アカウント作成';
+            document.getElementById('authButton').textContent = 'アカウント作成';
+            document.getElementById('confirmPasswordGroup').style.display = 'block';
+            document.getElementById('authHelp').innerHTML = 
+                '新しい管理者アカウントを作成します。<br>パスワードは6文字以上で設定してください。';
+            
+            // ボタンのactive状態を更新
+            document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // ユーティリティ関数
+        function getStatusColor(status) {
+            const colors = {
+                'active': 'success',
+                'upcoming': 'warning',
+                'closed': 'secondary',
+                'completed': 'info',
+                'cancelled': 'danger'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'active': 'アクティブ',
+                'upcoming': '予定',
+                'closed': '終了',
+                'completed': '完了',
+                'cancelled': 'キャンセル'
+            };
+            return texts[status] || status;
+        }
+
+        // ログアウト
+        async function logout() {
+            if (confirm('ログアウトしますか？')) {
+                await apiClient.adminLogout();
+                showLoginForm();
+            }
+        }
+
+        // Googleサインイン
+        async function signInWithGoogle() {
+            try {
+                if (!window.firebaseAuthManager) {
+                    alert('Firebase認証システムが読み込まれていません。ページを再読み込みしてください。');
+                    return;
+                }
+
+                console.log('Google サインインを開始...');
+                const result = await window.firebaseAuthManager.signInWithGoogle();
+                
+                if (result.success) {
+                    if (result.redirect) {
+                        // リダイレクト方式の場合
+                        console.log(result.message);
+                    } else {
+                        // ポップアップ方式の場合
+                        if (result.isNewUser) {
+                            alert('Googleアカウントで新規登録しました！');
+                        } else {
+                            alert('Googleアカウントでログインしました！');
+                        }
+                        location.reload();
+                    }
+                } else {
+                    alert('Googleサインインに失敗しました: ' + result.error.message);
+                }
+            } catch (error) {
+                console.error('Google サインインエラー:', error);
+                alert('エラー: ' + error.message);
+            }
+        }
+
+        // 仮の関数（実装予定）
+        function showCreatePantryForm() { alert('実装予定: パントリー作成フォーム'); }
+        function editPantry(id) { alert('実装予定: パントリー編集 - ' + id); }
+        function deletePantry(id) { alert('実装予定: パントリー削除 - ' + id); }
+        function viewReservation(id) { alert('実装予定: 予約詳細 - ' + id); }
+        function cancelReservation(id) { alert('実装予定: 予約キャンセル - ' + id); }
+        function viewUser(id) { alert('実装予定: ユーザー詳細 - ' + id); }
+        function exportLogs() { alert('実装予定: ログエクスポート'); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,2422 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>管理ダッシュボード - フードパントリー管理システム v6 (Cache-Cleared)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .sidebar .nav-link {
+            color: #495057;
+            border-radius: 5px;
+            margin: 2px 0;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar">
+                <div class="position-sticky">
+                    <h5 class="text-center mb-4">
+                        <i class="bi bi-heart-fill text-danger me-2"></i>
+                        管理システム
+                    </h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" data-page="dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i>ダッシュボード
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="pantries">
+                                <i class="bi bi-calendar-event me-2"></i>パントリー管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="reservations">
+                                <i class="bi bi-list-check me-2"></i>予約状況
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <div class="dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-people me-2"></i>ユーザー管理
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="loadPage('users'); return false;">利用者一覧</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="loadPage('admins'); return false;">管理者一覧</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="history">
+                                <i class="bi bi-clock-history me-2"></i>過去の利用履歴
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="logs">
+                                <i class="bi bi-file-text me-2"></i>ログ管理
+                            </a>
+                        </li>
+                        <hr>
+                        <li class="nav-item">
+                            <a class="nav-link" href="index.html">
+                                <i class="bi bi-house me-2"></i>メインサイト
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="#" onclick="logout()">
+                                <i class="bi bi-box-arrow-right me-2"></i>ログアウト
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
+                <div id="pageContent">
+                    <!-- コンテンツがここに動的に読み込まれます -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- モーダル -->
+    <div class="modal fade" id="actionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">タイトル</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- モーダル内容 -->
+                </div>
+                <div class="modal-footer" id="modalFooter">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/config.js?bust=1752983400000"></script>
+    <script src="js/firebase-config-simple.js?bust=1752983400000"></script>
+    <script src="js/api-simple.js?v=9"></script>
+    <script>
+        // ページ管理
+        let currentPage = 'dashboard';
+        let modalInstance = null;
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            modalInstance = new bootstrap.Modal(document.getElementById('actionModal'));
+            
+            // Firebase認証状態をチェック
+            if (window.firebaseAuthManager) {
+                window.firebaseAuthManager.onAuthStateChanged = function(user) {
+                    if (user) {
+                        // Firebase認証済み - ダッシュボードを表示
+                        console.log('Firebase認証済みユーザー:', user.email || user.displayName);
+                        loadPage('dashboard');
+                        setupNavigation();
+                    } else {
+                        // 未認証 - ログインフォームを表示
+                        showLoginForm();
+                    }
+                };
+                
+                // Googleリダイレクト結果をチェック
+                setTimeout(async () => {
+                    try {
+                        const redirectResult = await window.firebaseAuthManager.getRedirectResult();
+                        if (redirectResult.success && redirectResult.user) {
+                            console.log('Google リダイレクト サインイン成功:', redirectResult.user.email);
+                            if (redirectResult.isNewUser) {
+                                alert('Googleアカウントで新規登録しました！');
+                            } else {
+                                alert('Googleアカウントでログインしました！');
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('リダイレクト結果確認エラー:', error);
+                    }
+                    
+                    // 認証状態をチェック
+                    if (window.firebaseAuthManager.getCurrentUser()) {
+                        loadPage('dashboard');
+                        setupNavigation();
+                    } else {
+                        showLoginForm();
+                    }
+                }, 1000);
+            } else {
+                showLoginForm();
+            }
+        });
+
+        // ナビゲーション設定
+        function setupNavigation() {
+            document.querySelectorAll('.sidebar .nav-link[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.getAttribute('data-page');
+                    loadPage(page);
+                    
+                    // アクティブクラス更新
+                    document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
+
+        // ページ読み込み
+        async function loadPage(page) {
+            currentPage = page;
+            const content = document.getElementById('pageContent');
+            content.innerHTML = '<div class="loading"><div class="spinner-border"></div><p>読み込み中...</p></div>';
+            
+            try {
+                switch (page) {
+                    case 'dashboard':
+                        await loadDashboard();
+                        break;
+                    case 'pantries':
+                        await loadPantries();
+                        break;
+                    case 'reservations':
+                        await loadReservations();
+                        break;
+                    case 'users':
+                        await loadUsers();
+                        break;
+                    case 'admins':
+                        await loadAdmins();
+                        break;
+                    case 'history':
+                        await loadHistory();
+                        break;
+                    case 'logs':
+                        await loadLogs();
+                        break;
+                    default:
+                        content.innerHTML = '<div class="alert alert-danger">ページが見つかりません</div>';
+                }
+            } catch (error) {
+                content.innerHTML = '<div class="alert alert-danger">データの読み込みに失敗しました: ' + handleApiError(error) + '</div>';
+            }
+        }
+
+        // ダッシュボード読み込み
+        async function loadDashboard() {
+            const stats = await publicApi.getDashboardStats();
+            const pantries = await adminApi.getPantries();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">ダッシュボード</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <select class="form-select form-select-sm" id="dashboardFilter" onchange="filterDashboard()">
+                                <option value="all">全期間累計</option>
+                                <option value="fiscal">今年度（4月〜3月）</option>
+                                <option value="year">今年（1月〜12月）</option>
+                                <option value="location-市役所本庁舎">市役所本庁舎のみ</option>
+                                <option value="location-ニコット">ニコットのみ</option>
+                            </select>
+                        </div>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadPage('dashboard')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- メインステータスカード -->
+                <div class="row" id="dashboardStats">
+                    <div class="col-md-2">
+                        <div class="stat-card bg-primary">
+                            <div class="stat-number" id="totalReservations">${stats.success ? stats.data.totalReservations || 0 : 0}</div>
+                            <div>総予約数</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-card bg-danger">
+                            <div class="stat-number" id="redHouseholds">${stats.success ? stats.data.redHouseholds || 0 : 0}</div>
+                            <div>1名世帯</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-card bg-warning">
+                            <div class="stat-number" id="yellowHouseholds">${stats.success ? stats.data.yellowHouseholds || 0 : 0}</div>
+                            <div>2-3名世帯</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-card bg-success">
+                            <div class="stat-number" id="greenHouseholds">${stats.success ? stats.data.greenHouseholds || 0 : 0}</div>
+                            <div>4名以上世帯</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-card bg-info">
+                            <div class="stat-number" id="newUsers">${stats.success ? stats.data.newUsers || 0 : 0}</div>
+                            <div>新規利用者</div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="stat-card bg-secondary">
+                            <div class="stat-number" id="cancelCount">${stats.success ? stats.data.cancelCount || 0 : 0}</div>
+                            <div>キャンセル数</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- グラフエリア -->
+                <div class="row mt-4">
+                    <div class="col-md-8">
+                        <div class="table-container">
+                            <h5>利用者数推移</h5>
+                            <div class="chart-container">
+                                <canvas id="usageChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="table-container">
+                            <h5>世帯構成割合</h5>
+                            <div class="chart-container">
+                                <canvas id="householdChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 利用者ベストテンと最近のイベント -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="table-container">
+                            <h5>利用者ベストテン</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>順位</th>
+                                            <th>氏名</th>
+                                            <th>利用回数</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="topUsersTable">
+                                        <tr><td colspan="3">読み込み中...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="table-container">
+                            <h5>最近のイベント</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>日時</th>
+                                            <th>場所</th>
+                                            <th>予約数</th>
+                                            <th>ステータス</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${pantries.success ? pantries.data.slice(0, 5).map(p => {
+                                            const now = new Date();
+                                            const eventDate = new Date(p.event_date);
+                                            const reservationStart = new Date(p.reservation_start);
+                                            const reservationEnd = new Date(p.reservation_end);
+                                            
+                                            let statusText, statusColor;
+                                            if (now < reservationStart) {
+                                                statusText = '予約開始前';
+                                                statusColor = 'warning';
+                                            } else if (now >= reservationStart && now <= reservationEnd) {
+                                                statusText = '予約受付中';
+                                                statusColor = 'success';
+                                            } else if (now > reservationEnd && now < eventDate) {
+                                                statusText = '受付終了';
+                                                statusColor = 'secondary';
+                                            } else {
+                                                statusText = '開催済み';
+                                                statusColor = 'info';
+                                            }
+                                            
+                                            return `
+                                                <tr>
+                                                    <td>${formatDate(p.event_date)}</td>
+                                                    <td>${p.location}</td>
+                                                    <td>${p.reservation_count || 0}/${p.capacity_total || 0}</td>
+                                                    <td><span class="badge bg-${statusColor}">${statusText}</span></td>
+                                                </tr>
+                                            `;
+                                        }).join('') : '<tr><td colspan="4">データなし</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            
+            // グラフを初期化
+            initDashboardCharts(stats.data);
+            
+            // 利用者ベストテンを読み込み
+            loadTopUsers();
+        }
+
+        // ダッシュボードフィルター
+        async function filterDashboard() {
+            const filter = document.getElementById('dashboardFilter').value;
+            
+            try {
+                const stats = await publicApi.getDashboardStats(filter);
+                
+                // 統計データを更新
+                if (stats.success) {
+                    document.getElementById('totalReservations').textContent = stats.data.totalReservations || 0;
+                    document.getElementById('redHouseholds').textContent = stats.data.redHouseholds || 0;
+                    document.getElementById('yellowHouseholds').textContent = stats.data.yellowHouseholds || 0;
+                    document.getElementById('greenHouseholds').textContent = stats.data.greenHouseholds || 0;
+                    document.getElementById('newUsers').textContent = stats.data.newUsers || 0;
+                    document.getElementById('cancelCount').textContent = stats.data.cancelCount || 0;
+                    
+                    // グラフを更新
+                    updateDashboardCharts(stats.data);
+                }
+                
+                // 利用者ベストテンを更新
+                loadTopUsers(filter);
+                
+            } catch (error) {
+                console.error('フィルター更新エラー:', error);
+            }
+        }
+
+        // グラフ初期化
+        function initDashboardCharts(data) {
+            // 利用者数推移グラフ
+            const usageCtx = document.getElementById('usageChart').getContext('2d');
+            window.usageChart = new Chart(usageCtx, {
+                type: 'line',
+                data: {
+                    labels: data.usageHistory?.labels || [],
+                    datasets: [{
+                        label: '利用者数',
+                        data: data.usageHistory?.data || [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // 世帯構成割合グラフ
+            const householdCtx = document.getElementById('householdChart').getContext('2d');
+            window.householdChart = new Chart(householdCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['1名世帯', '2-3名世帯', '4名以上世帯'],
+                    datasets: [{
+                        data: [
+                            data.redHouseholds || 0,
+                            data.yellowHouseholds || 0,
+                            data.greenHouseholds || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(220, 53, 69, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(25, 135, 84, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // グラフ更新
+        function updateDashboardCharts(data) {
+            if (window.usageChart) {
+                window.usageChart.data.labels = data.usageHistory?.labels || [];
+                window.usageChart.data.datasets[0].data = data.usageHistory?.data || [];
+                window.usageChart.update();
+            }
+
+            if (window.householdChart) {
+                window.householdChart.data.datasets[0].data = [
+                    data.redHouseholds || 0,
+                    data.yellowHouseholds || 0,
+                    data.greenHouseholds || 0
+                ];
+                window.householdChart.update();
+            }
+        }
+
+        // 利用者ベストテン読み込み
+        async function loadTopUsers(filter = 'all') {
+            try {
+                const result = await adminApi.getTopUsers(filter);
+                const tbody = document.getElementById('topUsersTable');
+                
+                if (result.success && result.data.length > 0) {
+                    tbody.innerHTML = result.data.map((user, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><a href="#" onclick="viewUserDetail('${user.name_kana}'); return false;">${user.name_kana}</a></td>
+                            <td>${user.total_visits}回</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3">データがありません</td></tr>';
+                }
+            } catch (error) {
+                console.error('利用者ベストテン読み込みエラー:', error);
+                document.getElementById('topUsersTable').innerHTML = '<tr><td colspan="3">読み込みエラー</td></tr>';
+            }
+        }
+
+        // パントリー管理読み込み
+        async function loadPantries() {
+            const pantries = await adminApi.getPantries();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">パントリー管理</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-primary" onclick="showCreatePantryForm()">
+                                <i class="bi bi-plus"></i> 新規作成
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadPage('pantries')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>イベントID</th>
+                                    <th>開催日時</th>
+                                    <th>場所</th>
+                                    <th>定員</th>
+                                    <th>予約数</th>
+                                    <th>ステータス</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${pantries.success ? pantries.data.map(p => {
+                                    const now = new Date();
+                                    const eventDate = new Date(p.event_date);
+                                    const reservationStart = new Date(p.reservation_start);
+                                    const reservationEnd = new Date(p.reservation_end);
+                                    
+                                    let status, statusColor, statusText;
+                                    if (now < reservationStart) {
+                                        status = 'upcoming';
+                                        statusColor = 'warning';
+                                        statusText = '予約開始前';
+                                    } else if (now >= reservationStart && now <= reservationEnd) {
+                                        status = 'active';
+                                        statusColor = 'success';
+                                        statusText = '予約受付中';
+                                    } else if (now > reservationEnd && now < eventDate) {
+                                        status = 'closed';
+                                        statusColor = 'secondary';
+                                        statusText = '受付終了';
+                                    } else {
+                                        status = 'completed';
+                                        statusColor = 'info';
+                                        statusText = '開催済み';
+                                    }
+                                    
+                                    return `
+                                        <tr>
+                                            <td><a href="#" onclick="viewPantryReservations('${p.pantry_id}'); return false;">${p.pantry_id}</a></td>
+                                            <td>${formatDate(p.event_date)}</td>
+                                            <td>${p.location}</td>
+                                            <td>${p.capacity_total || 0}</td>
+                                            <td>${p.reservation_count || 0}</td>
+                                            <td><span class="badge bg-${statusColor}">${statusText}</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-info" onclick="viewPantryDetail('${p.pantry_id}')" title="詳細">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editPantry('${p.pantry_id}')" title="編集">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deletePantry('${p.pantry_id}')" title="削除">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('') : '<tr><td colspan="7">データがありません</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // 予約状況読み込み
+        async function loadReservations() {
+            const reservations = await adminApi.getReservations();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">予約状況</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadPage('reservations')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>予約ID</th>
+                                    <th>氏名</th>
+                                    <th>イベント</th>
+                                    <th>予約日時</th>
+                                    <th>ステータス</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${reservations.success ? reservations.data.map(r => `
+                                    <tr>
+                                        <td>${r.reservation_id}</td>
+                                        <td>${r.name_kana}</td>
+                                        <td>${r.pantry_id}</td>
+                                        <td>${formatDateTime(r.created_at)}</td>
+                                        <td><span class="badge bg-${getStatusColor(r.status)}">${getStatusText(r.status)}</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewReservation('${r.reservation_id}')">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="cancelReservation('${r.reservation_id}')">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="6">データがありません</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // ユーザー管理読み込み
+        async function loadUsers() {
+            const users = await adminApi.getUsers();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">ユーザー管理</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-primary" onclick="showUserSyncTriggerManagement()">
+                                <i class="bi bi-clock"></i> 自動同期設定
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadPage('users')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>氏名</th>
+                                    <th>地域</th>
+                                    <th>世帯人数</th>
+                                    <th>利用回数</th>
+                                    <th>最終利用日</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${users.success ? users.data.map(u => `
+                                    <tr>
+                                        <td><a href="#" onclick="viewUserDetail('${u.name_kana}'); return false;" class="text-decoration-none">${u.name_kana}</a></td>
+                                        <td>${u.normalized_area || u.area || '-'}</td>
+                                        <td>${u.avg_household_size || 1}人</td>
+                                        <td>${u.total_visits || 0}回</td>
+                                        <td>${formatDate(u.last_visit_date) || '-'}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewUserDetail('${u.name_kana}')">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="6">データがありません</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // 管理者一覧読み込み
+        async function loadAdmins() {
+            const admins = await adminApi.getAdmins();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">管理者一覧</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-primary" onclick="showAddAdminForm()">
+                                <i class="bi bi-plus"></i> 管理者追加
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="loadPage('admins')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ユーザー名</th>
+                                    <th>メールアドレス</th>
+                                    <th>作成日</th>
+                                    <th>最終ログイン</th>
+                                    <th>ステータス</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${admins.success ? admins.data.map(a => `
+                                    <tr>
+                                        <td>${a.username || a.email.split('@')[0]}</td>
+                                        <td>${a.email}</td>
+                                        <td>${formatDate(a.created_at) || '-'}</td>
+                                        <td>${formatDateTime(a.last_login) || '-'}</td>
+                                        <td><span class="badge bg-${a.is_active ? 'success' : 'secondary'}">${a.is_active ? 'アクティブ' : '無効'}</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewAdminDetail('${a.uid}')" title="詳細">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning" onclick="toggleAdminStatus('${a.uid}', ${!a.is_active})" title="${a.is_active ? '無効化' : '有効化'}">
+                                                <i class="bi bi-${a.is_active ? 'pause' : 'play'}"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('') : '<tr><td colspan="6">データがありません</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="table-container">
+                            <h5>管理者権限について</h5>
+                            <ul class="list-unstyled">
+                                <li><i class="bi bi-check-circle text-success me-2"></i>パントリーの作成・編集・削除</li>
+                                <li><i class="bi bi-check-circle text-success me-2"></i>予約の確認・キャンセル</li>
+                                <li><i class="bi bi-check-circle text-success me-2"></i>利用者情報の閲覧</li>
+                                <li><i class="bi bi-check-circle text-success me-2"></i>統計データの閲覧・エクスポート</li>
+                                <li><i class="bi bi-check-circle text-success me-2"></i>システムログの確認</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="table-container">
+                            <h5>セキュリティ情報</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>認証方式:</strong> Firebase Authentication</li>
+                                <li><strong>アクセス制御:</strong> 管理者のみアクセス可能</li>
+                                <li><strong>パスワード:</strong> Firebase管理</li>
+                                <li><strong>多要素認証:</strong> 利用可能（推奨）</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // 管理者追加フォーム表示
+        function showAddAdminForm() {
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalFooter = document.getElementById('modalFooter');
+            
+            modalTitle.textContent = '管理者追加';
+            modalBody.innerHTML = `
+                <form id="addAdminForm">
+                    <div class="mb-3">
+                        <label class="form-label">ユーザー名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="username" required placeholder="例: 田中太郎">
+                        <div class="form-text">表示名として使用されます</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">メールアドレス <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" name="email" required placeholder="例: admin@example.com">
+                        <div class="form-text">Firebaseアカウントのメールアドレス</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">初期パスワード <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" name="password" required minlength="6">
+                        <div class="form-text">6文字以上で設定してください。初回ログイン後に変更を推奨します。</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="send_invite" id="send_invite" checked>
+                            <label class="form-check-label" for="send_invite">
+                                招待メールを送信する
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            `;
+            
+            modalFooter.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="addAdmin()">追加</button>
+            `;
+            
+            modalInstance.show();
+        }
+
+        // 管理者追加
+        async function addAdmin() {
+            try {
+                const form = document.getElementById('addAdminForm');
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                
+                // バリデーション
+                if (!data.username || !data.email || !data.password) {
+                    alert('必須項目を入力してください');
+                    return;
+                }
+                
+                const result = await adminApi.addAdmin(data);
+                
+                if (result.success) {
+                    alert('管理者を追加しました');
+                    modalInstance.hide();
+                    loadPage('admins');
+                } else {
+                    alert('追加に失敗しました: ' + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // 管理者詳細表示
+        async function viewAdminDetail(uid) {
+            try {
+                const result = await adminApi.getAdminDetail(uid);
+                
+                if (result.success) {
+                    const admin = result.data;
+                    const modalTitle = document.getElementById('modalTitle');
+                    const modalBody = document.getElementById('modalBody');
+                    const modalFooter = document.getElementById('modalFooter');
+                    
+                    modalTitle.textContent = '管理者詳細';
+                    modalBody.innerHTML = `
+                        <table class="table">
+                            <tr><th>ユーザー名</th><td>${admin.username || admin.email.split('@')[0]}</td></tr>
+                            <tr><th>メールアドレス</th><td>${admin.email}</td></tr>
+                            <tr><th>UID</th><td>${admin.uid}</td></tr>
+                            <tr><th>作成日</th><td>${formatDateTime(admin.created_at) || '-'}</td></tr>
+                            <tr><th>最終ログイン</th><td>${formatDateTime(admin.last_login) || '-'}</td></tr>
+                            <tr><th>ステータス</th><td><span class="badge bg-${admin.is_active ? 'success' : 'secondary'}">${admin.is_active ? 'アクティブ' : '無効'}</span></td></tr>
+                            <tr><th>プロバイダー</th><td>${admin.provider || 'firebase'}</td></tr>
+                        </table>
+                    `;
+                    
+                    modalFooter.innerHTML = `
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    `;
+                    
+                    modalInstance.show();
+                } else {
+                    alert('管理者情報の取得に失敗しました: ' + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // 管理者ステータス切り替え
+        async function toggleAdminStatus(uid, newStatus) {
+            const action = newStatus ? '有効化' : '無効化';
+            if (!confirm(`この管理者を${action}しますか？`)) {
+                return;
+            }
+            
+            try {
+                const result = await adminApi.toggleAdminStatus(uid, newStatus);
+                
+                if (result.success) {
+                    alert(`管理者を${action}しました`);
+                    loadPage('admins');
+                } else {
+                    alert(`${action}に失敗しました: ` + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // 過去の利用履歴読み込み
+        async function loadHistory() {
+            const history = await adminApi.getUsageHistory();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">過去の利用履歴</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <select class="form-select form-select-sm" id="historyFilter" onchange="filterHistory()">
+                                <option value="all">全期間</option>
+                                <option value="fiscal">今年度（4月〜3月）</option>
+                                <option value="year">今年（1月〜12月）</option>
+                                <option value="location-市役所本庁舎">市役所本庁舎のみ</option>
+                                <option value="location-ニコット">ニコットのみ</option>
+                            </select>
+                        </div>
+                        <div class="btn-group me-2">
+                            <input type="text" class="form-control form-control-sm" id="historyUserFilter" placeholder="ユーザー名で検索" onkeyup="filterHistory()">
+                        </div>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadPage('history')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>検索結果: </strong><span id="historyCount">${history.success ? history.data.length : 0}件</span>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportHistory()">
+                                        <i class="bi bi-download"></i> CSVエクスポート
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="historyTable">
+                            <thead>
+                                <tr>
+                                    <th>予約ID</th>
+                                    <th>氏名</th>
+                                    <th>開催日</th>
+                                    <th>場所</th>
+                                    <th>世帯人数</th>
+                                    <th>地域</th>
+                                    <th>予約日時</th>
+                                    <th>ステータス</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                ${history.success ? history.data.map(h => {
+                                    const householdCount = h.household_total || 1;
+                                    let householdIcon, householdColor;
+                                    if (householdCount === 1) {
+                                        householdIcon = '🔴';
+                                        householdColor = 'danger';
+                                    } else if (householdCount <= 3) {
+                                        householdIcon = '🟡';
+                                        householdColor = 'warning';
+                                    } else {
+                                        householdIcon = '🟢';
+                                        householdColor = 'success';
+                                    }
+                                    
+                                    return `
+                                        <tr>
+                                            <td>${h.reservation_id}</td>
+                                            <td><a href="#" onclick="viewUserDetail('${h.name_kana}'); return false;">${h.name_kana}</a></td>
+                                            <td>${formatDate(h.event_date)}</td>
+                                            <td>${h.location}</td>
+                                            <td><span class="badge bg-${householdColor}">${householdIcon} ${householdCount}名</span></td>
+                                            <td>${h.area || '-'}</td>
+                                            <td>${formatDateTime(h.created_at)}</td>
+                                            <td><span class="badge bg-${getStatusColor(h.status)}">${getStatusText(h.status)}</span></td>
+                                        </tr>
+                                    `;
+                                }).join('') : '<tr><td colspan="8">データがありません</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // 履歴フィルター
+        async function filterHistory() {
+            const filter = document.getElementById('historyFilter').value;
+            const userFilter = document.getElementById('historyUserFilter').value.trim();
+            
+            try {
+                const history = await adminApi.getUsageHistory(filter, userFilter);
+                const tbody = document.getElementById('historyTableBody');
+                const countSpan = document.getElementById('historyCount');
+                
+                if (history.success) {
+                    countSpan.textContent = `${history.data.length}件`;
+                    
+                    if (history.data.length > 0) {
+                        tbody.innerHTML = history.data.map(h => {
+                            const householdCount = h.household_total || 1;
+                            let householdIcon, householdColor;
+                            if (householdCount === 1) {
+                                householdIcon = '🔴';
+                                householdColor = 'danger';
+                            } else if (householdCount <= 3) {
+                                householdIcon = '🟡';
+                                householdColor = 'warning';
+                            } else {
+                                householdIcon = '🟢';
+                                householdColor = 'success';
+                            }
+                            
+                            return `
+                                <tr>
+                                    <td>${h.reservation_id}</td>
+                                    <td><a href="#" onclick="viewUserDetail('${h.name_kana}'); return false;">${h.name_kana}</a></td>
+                                    <td>${formatDate(h.event_date)}</td>
+                                    <td>${h.location}</td>
+                                    <td><span class="badge bg-${householdColor}">${householdIcon} ${householdCount}名</span></td>
+                                    <td>${h.area || '-'}</td>
+                                    <td>${formatDateTime(h.created_at)}</td>
+                                    <td><span class="badge bg-${getStatusColor(h.status)}">${getStatusText(h.status)}</span></td>
+                                </tr>
+                            `;
+                        }).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="8">条件に一致するデータがありません</td></tr>';
+                    }
+                }
+            } catch (error) {
+                console.error('履歴フィルター更新エラー:', error);
+            }
+        }
+
+        // 履歴CSVエクスポート
+        async function exportHistory() {
+            try {
+                const filter = document.getElementById('historyFilter').value;
+                const userFilter = document.getElementById('historyUserFilter').value.trim();
+                
+                const result = await adminApi.exportUsageHistory(filter, userFilter);
+                
+                if (result.success && result.data) {
+                    // CSV データをBlob として作成
+                    const blob = new Blob([result.data], { type: 'text/csv;charset=utf-8;' });
+                    
+                    // ダウンロードリンクを作成
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `foodbank-usage-history-${new Date().toISOString().split('T')[0]}.csv`);
+                    link.style.visibility = 'hidden';
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    alert('利用履歴ファイルをダウンロードしました');
+                } else {
+                    alert('履歴のエクスポートに失敗しました: ' + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // ログ管理読み込み
+        async function loadLogs() {
+            const logs = await adminApi.getLogs();
+            
+            const content = `
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">システムログ</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <select class="form-select form-select-sm" id="logLevelFilter" onchange="filterLogs()">
+                                <option value="all">すべてのレベル</option>
+                                <option value="INFO">情報</option>
+                                <option value="ERROR">エラー</option>
+                                <option value="SUCCESS">成功</option>
+                            </select>
+                        </div>
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportLogs()">
+                                <i class="bi bi-download"></i> CSV出力
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadPage('logs')">
+                                <i class="bi bi-arrow-clockwise"></i> 更新
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ログ統計 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-success">${logs.success ? logs.data.filter(l => l.level === 'SUCCESS').length : 0}</h5>
+                                <p class="card-text">成功</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-info">${logs.success ? logs.data.filter(l => l.level === 'INFO').length : 0}</h5>
+                                <p class="card-text">情報</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-danger">${logs.success ? logs.data.filter(l => l.level === 'ERROR').length : 0}</h5>
+                                <p class="card-text">エラー</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-secondary">${logs.success ? logs.data.length : 0}</h5>
+                                <p class="card-text">総件数</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover" id="logsTable">
+                            <thead>
+                                <tr>
+                                    <th width="15%">日時</th>
+                                    <th width="10%">レベル</th>
+                                    <th width="25%">メッセージ</th>
+                                    <th width="50%">詳細</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                ${logs.success ? logs.data.map(l => {
+                                    let levelClass = 'secondary';
+                                    switch(l.level) {
+                                        case 'SUCCESS': levelClass = 'success'; break;
+                                        case 'INFO': levelClass = 'info'; break;
+                                        case 'ERROR': levelClass = 'danger'; break;
+                                    }
+                                    
+                                    let details = '';
+                                    try {
+                                        const detailObj = JSON.parse(l.details);
+                                        details = Object.entries(detailObj)
+                                            .map(([key, value]) => `${key}: ${value}`)
+                                            .join(', ');
+                                    } catch {
+                                        details = l.details || '-';
+                                    }
+                                    
+                                    return `
+                                        <tr>
+                                            <td><small>${formatDateTime(l.created_at)}</small></td>
+                                            <td><span class="badge bg-${levelClass}">${l.level}</span></td>
+                                            <td><small>${l.message}</small></td>
+                                            <td><small class="text-muted">${details}</small></td>
+                                        </tr>
+                                    `;
+                                }).join('') : '<tr><td colspan="4">データがありません</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="table-container">
+                            <h6>記録対象イベント</h6>
+                            <ul class="list-unstyled small text-muted">
+                                <li><i class="bi bi-dot"></i> 予約の完了・キャンセル</li>
+                                <li><i class="bi bi-dot"></i> 管理画面へのアクセス（ログイン・ページ遷移）</li>
+                                <li><i class="bi bi-dot"></i> パントリーの作成・更新・削除</li>
+                                <li><i class="bi bi-dot"></i> システムエラー</li>
+                                <li><i class="bi bi-dot"></i> APIアクセス（成功・失敗）</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+        }
+
+        // ログフィルター
+        async function filterLogs() {
+            const levelFilter = document.getElementById('logLevelFilter').value;
+            
+            try {
+                const logs = await adminApi.getLogs(levelFilter);
+                const tbody = document.getElementById('logsTableBody');
+                
+                if (logs.success) {
+                    if (logs.data.length > 0) {
+                        tbody.innerHTML = logs.data.map(l => {
+                            let levelClass = 'secondary';
+                            switch(l.level) {
+                                case 'SUCCESS': levelClass = 'success'; break;
+                                case 'INFO': levelClass = 'info'; break;
+                                case 'ERROR': levelClass = 'danger'; break;
+                            }
+                            
+                            let details = '';
+                            try {
+                                const detailObj = JSON.parse(l.details);
+                                details = Object.entries(detailObj)
+                                    .map(([key, value]) => `${key}: ${value}`)
+                                    .join(', ');
+                            } catch {
+                                details = l.details || '-';
+                            }
+                            
+                            return `
+                                <tr>
+                                    <td><small>${formatDateTime(l.created_at)}</small></td>
+                                    <td><span class="badge bg-${levelClass}">${l.level}</span></td>
+                                    <td><small>${l.message}</small></td>
+                                    <td><small class="text-muted">${details}</small></td>
+                                </tr>
+                            `;
+                        }).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="4">条件に一致するログがありません</td></tr>';
+                    }
+                }
+            } catch (error) {
+                console.error('ログフィルター更新エラー:', error);
+            }
+        }
+
+        // ログイン画面表示
+        function showLoginForm() {
+            const content = `
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header text-center">
+                                <h4 id="authTitle">管理者ログイン</h4>
+                                <div class="btn-group w-100 mt-2" role="group">
+                                    <button type="button" class="btn btn-outline-primary active" onclick="showLogin()">ログイン</button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="showRegister()">新規作成</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <form id="authForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">メールアドレス</label>
+                                        <input type="email" class="form-control" name="email" required placeholder="admin@foodbank.local">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">パスワード</label>
+                                        <input type="password" class="form-control" name="password" required>
+                                    </div>
+                                    <div class="mb-3" id="confirmPasswordGroup" style="display: none;">
+                                        <label class="form-label">パスワード確認</label>
+                                        <input type="password" class="form-control" name="confirmPassword">
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary" id="authButton">ログイン</button>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="text-center">
+                                            <span class="text-muted">または</span>
+                                        </div>
+                                        <div class="d-grid mt-2">
+                                            <button type="button" class="btn btn-outline-danger" onclick="signInWithGoogle()">
+                                                <i class="bi bi-google me-2"></i>Googleでサインイン
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <small class="text-muted" id="authHelp">
+                                            Firebase Authenticationを使用します。<br>
+                                            既存の管理者アカウントでログインしてください。
+                                        </small>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('pageContent').innerHTML = content;
+            
+            // フォーム送信イベント
+            document.getElementById('authForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const credentials = Object.fromEntries(formData.entries());
+                const isRegister = document.getElementById('authButton').textContent === 'アカウント作成';
+                
+                // パスワード確認チェック（新規作成時）
+                if (isRegister && credentials.password !== credentials.confirmPassword) {
+                    alert('パスワードが一致しません');
+                    return;
+                }
+                
+                try {
+                    // Firebase設定が読み込まれるまで待機
+                    if (!window.firebaseAuthManager) {
+                        alert('Firebase認証システムが読み込まれていません。ページを再読み込みしてください。');
+                        return;
+                    }
+                    
+                    if (isRegister) {
+                        // アカウント作成
+                        const authResult = await window.firebaseAuthManager.createUserWithEmailAndPassword(
+                            credentials.email, 
+                            credentials.password
+                        );
+                        
+                        if (authResult.success) {
+                            alert('アカウントが作成されました！ログインします...');
+                            location.reload();
+                        } else {
+                            alert('アカウント作成に失敗しました: ' + authResult.error.message);
+                        }
+                    } else {
+                        // ログイン
+                        const authResult = await window.firebaseAuthManager.signInWithEmailAndPassword(
+                            credentials.email, 
+                            credentials.password
+                        );
+                        
+                        if (authResult.success) {
+                            alert('ログインしました！');
+                            location.reload();
+                        } else {
+                            alert('ログインに失敗しました: ' + authResult.error.message);
+                        }
+                    }
+                } catch (error) {
+                    console.error('認証エラー:', error);
+                    alert('エラー: ' + (error.message || handleApiError(error)));
+                }
+            });
+        }
+
+        // ログインモードに切り替え
+        function showLogin() {
+            document.getElementById('authTitle').textContent = '管理者ログイン';
+            document.getElementById('authButton').textContent = 'ログイン';
+            document.getElementById('confirmPasswordGroup').style.display = 'none';
+            document.getElementById('authHelp').innerHTML = 
+                'Firebase Authenticationを使用します。<br>既存の管理者アカウントでログインしてください。';
+            
+            // ボタンのactive状態を更新
+            document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // 新規作成モードに切り替え
+        function showRegister() {
+            document.getElementById('authTitle').textContent = '管理者アカウント作成';
+            document.getElementById('authButton').textContent = 'アカウント作成';
+            document.getElementById('confirmPasswordGroup').style.display = 'block';
+            document.getElementById('authHelp').innerHTML = 
+                '新しい管理者アカウントを作成します。<br>パスワードは6文字以上で設定してください。';
+            
+            // ボタンのactive状態を更新
+            document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        // ユーティリティ関数
+        function getStatusColor(status) {
+            const colors = {
+                'active': 'success',
+                'upcoming': 'warning',
+                'closed': 'secondary',
+                'completed': 'info',
+                'cancelled': 'danger'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                'active': 'アクティブ',
+                'upcoming': '予定',
+                'closed': '終了',
+                'completed': '完了',
+                'cancelled': 'キャンセル'
+            };
+            return texts[status] || status;
+        }
+
+        // ログアウト
+        async function logout() {
+            if (confirm('ログアウトしますか？')) {
+                if (window.firebaseAuthManager) {
+                    await window.firebaseAuthManager.signOut();
+                }
+                showLoginForm();
+            }
+        }
+
+        // Googleサインイン
+        async function signInWithGoogle() {
+            try {
+                if (!window.firebaseAuthManager) {
+                    alert('Firebase認証システムが読み込まれていません。ページを再読み込みしてください。');
+                    return;
+                }
+
+                console.log('Google サインインを開始...');
+                const result = await window.firebaseAuthManager.signInWithGoogle();
+                
+                if (result.success) {
+                    if (result.redirect) {
+                        // リダイレクト方式の場合
+                        console.log(result.message);
+                    } else {
+                        // ポップアップ方式の場合
+                        if (result.isNewUser) {
+                            alert('Googleアカウントで新規登録しました！');
+                        } else {
+                            alert('Googleアカウントでログインしました！');
+                        }
+                        location.reload();
+                    }
+                } else {
+                    alert('Googleサインインに失敗しました: ' + result.error.message);
+                }
+            } catch (error) {
+                console.error('Google サインインエラー:', error);
+                alert('エラー: ' + error.message);
+            }
+        }
+
+        // 開催場所の定義
+        const LOCATIONS = {
+            '市役所本庁舎': {
+                address: '〒272-0021 千葉県市川市八幡1-1-1',
+                access: 'JR本八幡駅から徒歩10分',
+                mapUrl: 'https://maps.google.com/?q=市川市役所本庁舎'
+            },
+            'ニコット': {
+                address: '〒272-0021 千葉県市川市八幡3-3-3',
+                access: 'JR本八幡駅から徒歩5分',
+                mapUrl: 'https://maps.google.com/?q=ニコット市川'
+            }
+        };
+
+        // パントリー作成フォーム表示
+        function showCreatePantryForm() {
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalFooter = document.getElementById('modalFooter');
+            
+            modalTitle.textContent = 'パントリー作成';
+            modalBody.innerHTML = `
+                <form id="pantryForm">
+                    <div class="mb-3">
+                        <label class="form-label">開催日 <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="event_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">開催場所 <span class="text-danger">*</span></label>
+                        <select class="form-select" name="location" required onchange="updateLocationInfo(this)">
+                            <option value="">選択してください</option>
+                            <option value="市役所本庁舎">市役所本庁舎</option>
+                            <option value="ニコット">ニコット</option>
+                        </select>
+                        <div id="locationInfo" class="small text-muted mt-1"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">予約開始日 <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="reservation_start" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">予約終了日 <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="reservation_end" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">予約上限数 <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" name="capacity_total" required min="1" max="200" value="50">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">タイトル</label>
+                        <input type="text" class="form-control" name="title" placeholder="例: 1月度 フードパントリー">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ヘッダー案内文</label>
+                        <textarea class="form-control" name="header_message" rows="2" placeholder="予約フォーム上部に表示される案内文"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">自動応答メール案内文</label>
+                        <textarea class="form-control" name="email_message" rows="2" placeholder="予約完了時に送信されるメール本文"></textarea>
+                    </div>
+                </form>
+            `;
+            
+            modalFooter.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="savePantry()">作成</button>
+            `;
+            
+            modalInstance.show();
+        }
+
+        // 場所情報の更新
+        function updateLocationInfo(select) {
+            const locationInfo = document.getElementById('locationInfo');
+            const location = select.value;
+            
+            if (location && LOCATIONS[location]) {
+                const info = LOCATIONS[location];
+                locationInfo.innerHTML = `${info.address}<br>${info.access}`;
+            } else {
+                locationInfo.innerHTML = '';
+            }
+        }
+
+        // パントリー保存
+        async function savePantry() {
+            try {
+                const form = document.getElementById('pantryForm');
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                
+                // バリデーション
+                if (!data.event_date || !data.location || !data.reservation_start || !data.reservation_end || !data.capacity_total) {
+                    alert('必須項目を入力してください');
+                    return;
+                }
+                
+                // 日付バリデーション
+                const eventDate = new Date(data.event_date);
+                const reservationStart = new Date(data.reservation_start);
+                const reservationEnd = new Date(data.reservation_end);
+                
+                if (reservationStart >= reservationEnd) {
+                    alert('予約開始日は予約終了日より前の日付を選択してください');
+                    return;
+                }
+                
+                if (reservationEnd >= eventDate) {
+                    alert('予約終了日は開催日より前の日付を選択してください');
+                    return;
+                }
+                
+                // 期間重複チェック
+                const existingPantries = await adminApi.getPantries();
+                if (existingPantries.success) {
+                    const overlap = existingPantries.data.some(p => {
+                        const existingStart = new Date(p.reservation_start);
+                        const existingEnd = new Date(p.reservation_end);
+                        
+                        // 新しい期間が既存の期間と重複するかチェック
+                        return (reservationStart <= existingEnd && reservationEnd >= existingStart);
+                    });
+                    
+                    if (overlap) {
+                        alert('指定した予約期間が既存のパントリーと重複しています。\n予約フォームのURLは固定のため、期間の重複は許可されません。');
+                        return;
+                    }
+                }
+                
+                // 場所情報を追加
+                if (LOCATIONS[data.location]) {
+                    data.location_address = LOCATIONS[data.location].address;
+                    data.location_access = LOCATIONS[data.location].access;
+                }
+                
+                const result = await adminApi.createPantry(data);
+                
+                if (result.success) {
+                    alert('パントリーを作成しました');
+                    modalInstance.hide();
+                    loadPage('pantries'); // 一覧を再読み込み
+                } else {
+                    alert('作成に失敗しました: ' + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // パントリー編集
+        async function editPantry(pantryId) {
+            try {
+                // まず現在のデータを取得
+                const pantries = await adminApi.getPantries();
+                const pantry = pantries.success ? pantries.data.find(p => p.pantry_id === pantryId) : null;
+                
+                if (!pantry) {
+                    alert('パントリー情報が見つかりません');
+                    return;
+                }
+                
+                const modalTitle = document.getElementById('modalTitle');
+                const modalBody = document.getElementById('modalBody');
+                const modalFooter = document.getElementById('modalFooter');
+                
+                modalTitle.textContent = 'パントリー編集';
+                modalBody.innerHTML = `
+                    <form id="pantryEditForm">
+                        <input type="hidden" name="pantry_id" value="${pantryId}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">開催日時 <span class="text-danger">*</span></label>
+                                    <input type="datetime-local" class="form-control" name="event_date" required value="${pantry.event_date || ''}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">開催場所 <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="location" required value="${pantry.location || ''}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">予約上限数 <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" name="capacity_total" required min="1" max="200" value="${pantry.capacity_total || 50}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">ステータス</label>
+                                    <select class="form-select" name="status">
+                                        <option value="upcoming" ${pantry.status === 'upcoming' ? 'selected' : ''}>予定</option>
+                                        <option value="active" ${pantry.status === 'active' ? 'selected' : ''}>受付中</option>
+                                        <option value="closed" ${pantry.status === 'closed' ? 'selected' : ''}>終了</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                `;
+                
+                modalFooter.innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="button" class="btn btn-primary" onclick="updatePantry()">更新</button>
+                `;
+                
+                modalInstance.show();
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // パントリー更新
+        async function updatePantry() {
+            try {
+                const form = document.getElementById('pantryEditForm');
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                
+                const result = await adminApi.updatePantry(data);
+                
+                if (result.success) {
+                    alert('パントリーを更新しました');
+                    modalInstance.hide();
+                    loadPage('pantries');
+                } else {
+                    alert('更新に失敗しました: ' + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // パントリー削除
+        async function deletePantry(pantryId) {
+            if (!confirm('このパントリーを削除しますか？\n※関連する予約データも削除されます。')) {
+                return;
+            }
+            
+            try {
+                const result = await adminApi.deletePantry(pantryId);
+                
+                if (result.success) {
+                    alert('パントリーを削除しました');
+                    loadPage('pantries');
+                } else {
+                    alert('削除に失敗しました: ' + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // パントリー詳細表示
+        async function viewPantryDetail(pantryId) {
+            try {
+                const pantries = await adminApi.getPantries();
+                const pantry = pantries.success ? pantries.data.find(p => p.pantry_id === pantryId) : null;
+                
+                if (!pantry) {
+                    alert('パントリー情報が見つかりません');
+                    return;
+                }
+                
+                const modalTitle = document.getElementById('modalTitle');
+                const modalBody = document.getElementById('modalBody');
+                const modalFooter = document.getElementById('modalFooter');
+                
+                modalTitle.textContent = 'パントリー詳細';
+                modalBody.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table">
+                                <tr><th>パントリーID</th><td>${pantry.pantry_id}</td></tr>
+                                <tr><th>開催日</th><td>${formatDate(pantry.event_date)}</td></tr>
+                                <tr><th>開催場所</th><td>${pantry.location}</td></tr>
+                                <tr><th>予約上限数</th><td>${pantry.capacity_total}名</td></tr>
+                                <tr><th>現在の予約数</th><td>${pantry.reservation_count || 0}名</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table">
+                                <tr><th>予約開始日</th><td>${formatDate(pantry.reservation_start)}</td></tr>
+                                <tr><th>予約終了日</th><td>${formatDate(pantry.reservation_end)}</td></tr>
+                                <tr><th>タイトル</th><td>${pantry.title || '-'}</td></tr>
+                                <tr><th>場所住所</th><td>${LOCATIONS[pantry.location]?.address || '-'}</td></tr>
+                                <tr><th>アクセス</th><td>${LOCATIONS[pantry.location]?.access || '-'}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    ${pantry.header_message ? `
+                        <div class="mt-3">
+                            <h6>ヘッダー案内文</h6>
+                            <div class="border p-2 bg-light">${pantry.header_message}</div>
+                        </div>
+                    ` : ''}
+                    ${pantry.email_message ? `
+                        <div class="mt-3">
+                            <h6>自動応答メール案内文</h6>
+                            <div class="border p-2 bg-light">${pantry.email_message}</div>
+                        </div>
+                    ` : ''}
+                `;
+                
+                modalFooter.innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    <button type="button" class="btn btn-primary" onclick="viewPantryReservations('${pantryId}')">予約状況を見る</button>
+                `;
+                
+                modalInstance.show();
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // パントリーごとの予約状況表示
+        async function viewPantryReservations(pantryId) {
+            try {
+                modalInstance.hide();
+                currentPage = 'reservations';
+                
+                // 特定のパントリーの予約状況を表示
+                const reservations = await adminApi.getReservationsByPantry(pantryId);
+                const pantries = await adminApi.getPantries();
+                const pantry = pantries.success ? pantries.data.find(p => p.pantry_id === pantryId) : null;
+                
+                const content = `
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">予約状況 - ${pantryId}</h1>
+                        <div class="btn-toolbar mb-2 mb-md-0">
+                            <div class="btn-group me-2">
+                                <button type="button" class="btn btn-outline-secondary" onclick="loadPage('pantries')">
+                                    <i class="bi bi-arrow-left"></i> パントリー一覧に戻る
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="viewPantryReservations('${pantryId}')">
+                                    <i class="bi bi-arrow-clockwise"></i> 更新
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${pantry ? `
+                        <div class="table-container mb-4">
+                            <h5>パントリー情報</h5>
+                            <div class="row">
+                                <div class="col-md-3"><strong>開催日:</strong> ${formatDate(pantry.event_date)}</div>
+                                <div class="col-md-3"><strong>場所:</strong> ${pantry.location}</div>
+                                <div class="col-md-3"><strong>定員:</strong> ${pantry.capacity_total}名</div>
+                                <div class="col-md-3"><strong>予約数:</strong> ${pantry.reservation_count || 0}名</div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="table-container">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>予約ID</th>
+                                        <th>氏名</th>
+                                        <th>世帯人数</th>
+                                        <th>予約日時</th>
+                                        <th>ステータス</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${reservations.success ? reservations.data.map(r => {
+                                        const householdCount = r.household_total || 1;
+                                        let householdIcon, householdColor;
+                                        if (householdCount === 1) {
+                                            householdIcon = '🔴';
+                                            householdColor = 'danger';
+                                        } else if (householdCount <= 3) {
+                                            householdIcon = '🟡';
+                                            householdColor = 'warning';
+                                        } else {
+                                            householdIcon = '🟢';
+                                            householdColor = 'success';
+                                        }
+                                        
+                                        return `
+                                            <tr>
+                                                <td>${r.reservation_id}</td>
+                                                <td><a href="#" onclick="viewUserDetail('${r.name_kana}'); return false;">${r.name_kana}</a></td>
+                                                <td><span class="badge bg-${householdColor}">${householdIcon} ${householdCount}名</span></td>
+                                                <td>${formatDateTime(r.created_at)}</td>
+                                                <td><span class="badge bg-${getStatusColor(r.status)}">${getStatusText(r.status)}</span></td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-info" onclick="viewReservation('${r.reservation_id}')">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" onclick="cancelReservation('${r.reservation_id}')">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('') : '<tr><td colspan="6">データがありません</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('pageContent').innerHTML = content;
+                
+                // ナビゲーションのアクティブ状態を更新
+                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                document.querySelector('.sidebar .nav-link[data-page="reservations"]').classList.add('active');
+                
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // 予約詳細表示
+        async function viewReservation(reservationId) {
+            try {
+                const result = await adminApi.getReservationDetail(reservationId);
+                
+                if (result.success) {
+                    const reservation = result.data;
+                    const modalTitle = document.getElementById('modalTitle');
+                    const modalBody = document.getElementById('modalBody');
+                    const modalFooter = document.getElementById('modalFooter');
+                    
+                    modalTitle.textContent = '予約詳細';
+                    modalBody.innerHTML = `
+                        <table class="table">
+                            <tr><th>予約ID</th><td>${reservation.reservation_id || ''}</td></tr>
+                            <tr><th>氏名（カナ）</th><td>${reservation.name_kana || ''}</td></tr>
+                            <tr><th>パントリー</th><td>${reservation.pantry_id || ''}</td></tr>
+                            <tr><th>予約日時</th><td>${formatDateTime(reservation.created_at)}</td></tr>
+                            <tr><th>ステータス</th><td><span class="badge bg-${getStatusColor(reservation.status)}">${getStatusText(reservation.status)}</span></td></tr>
+                            <tr><th>電話番号</th><td>${reservation.phone || '-'}</td></tr>
+                            <tr><th>メールアドレス</th><td>${reservation.email || '-'}</td></tr>
+                            <tr><th>世帯人数</th><td>${reservation.household_total || '-'}人</td></tr>
+                        </table>
+                    `;
+                    
+                    modalFooter.innerHTML = `
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="button" class="btn btn-danger" onclick="cancelReservation('${reservationId}')">予約キャンセル</button>
+                    `;
+                    
+                    modalInstance.show();
+                } else {
+                    alert('予約情報の取得に失敗しました: ' + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // 予約キャンセル
+        async function cancelReservation(reservationId) {
+            if (!confirm('この予約をキャンセルしますか？')) {
+                return;
+            }
+            
+            try {
+                const result = await adminApi.cancelReservation(reservationId);
+                
+                if (result.success) {
+                    alert('予約をキャンセルしました');
+                    modalInstance.hide();
+                    loadPage('reservations');
+                } else {
+                    alert('キャンセルに失敗しました: ' + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+
+        // ユーザー詳細表示
+        async function viewUserDetail(nameKana) {
+            try {
+                const result = await adminApi.getUserDetail(nameKana);
+                
+                if (result.success) {
+                    const user = result.data;
+                    const modalTitle = document.getElementById('modalTitle');
+                    const modalBody = document.getElementById('modalBody');
+                    const modalFooter = document.getElementById('modalFooter');
+                    
+                    modalTitle.textContent = `ユーザー詳細 - ${user.name_kana}`;
+                    modalBody.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>基本情報</h6>
+                                <table class="table table-sm">
+                                    <tr><th>ユーザーID</th><td>${user.user_id || '-'}</td></tr>
+                                    <tr><th>氏名（カナ）</th><td><strong>${user.name_kana || ''}</strong></td></tr>
+                                    <tr><th>氏名（漢字）</th><td>${user.name_kanji || '-'}</td></tr>
+                                    <tr><th>住所</th><td>${user.normalized_area || '-'}</td></tr>
+                                    <tr><th>メールアドレス</th><td>${user.email || '-'}</td></tr>
+                                    <tr><th>電話番号</th><td>${user.phone || '-'}</td></tr>
+                                </table>
+                                
+                                <h6>利用統計</h6>
+                                <table class="table table-sm">
+                                    <tr><th>総利用回数</th><td><span class="badge bg-primary">${user.total_visits || 0}回</span></td></tr>
+                                    <tr><th>平均世帯人数</th><td>${user.avg_household_size || 1}人</td></tr>
+                                    <tr><th>初回利用日</th><td>${formatDate(user.first_visit_date) || '-'}</td></tr>
+                                    <tr><th>最終利用日</th><td>${formatDate(user.last_visit_date) || '-'}</td></tr>
+                                    <tr><th>登録日</th><td>${formatDate(user.created_at) || '-'}</td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>利用履歴 <small class="text-muted">(最新10件)</small></h6>
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    ${user.visit_history && user.visit_history.length > 0 ? 
+                                        user.visit_history.slice(0, 10).map(visit => {
+                                            const householdSize = visit.household_size || 1;
+                                            let householdIcon, householdColor;
+                                            if (householdSize === 1) {
+                                                householdIcon = '🔴';
+                                                householdColor = 'danger';
+                                            } else if (householdSize <= 3) {
+                                                householdIcon = '🟡';
+                                                householdColor = 'warning';
+                                            } else {
+                                                householdIcon = '🟢';
+                                                householdColor = 'success';
+                                            }
+                                            
+                                            return `
+                                            <div class="card mb-2">
+                                                <div class="card-body py-2">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>${formatDate(visit.date)}</strong><br>
+                                                            <small class="text-muted">${visit.pantry_id} (${visit.location})</small>
+                                                        </div>
+                                                        <span class="badge bg-${householdColor}">${householdIcon} ${householdSize}名</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            `;
+                                        }).join('') :
+                                        '<div class="alert alert-info">利用履歴がありません</div>'
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    modalFooter.innerHTML = `
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    `;
+                    
+                    modalInstance.show();
+                } else {
+                    alert('ユーザー情報の取得に失敗しました: ' + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+        
+        // 下位互換性のためのエイリアス
+        const viewUser = viewUserDetail;
+
+        // ユーザーDB設定画面表示
+        function showUsersDBSetup() {
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalFooter = document.getElementById('modalFooter');
+            
+            modalTitle.textContent = 'ユーザーDB設定';
+            modalBody.innerHTML = `
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-info-circle me-2"></i>ユーザーDBについて</h5>
+                    <p>ユーザーDBシートを作成することで、ユーザー管理のパフォーマンスが向上し、詳細な利用履歴を高速で表示できるようになります。</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>実行する処理:</h6>
+                    <ul>
+                        <li>users_dbシートを作成（14列の専用テーブル）</li>
+                        <li>既存のreservationシートからユーザーデータを集計・移行</li>
+                        <li>住所の正規化とユーザーIDの自動生成</li>
+                        <li>利用履歴のJSON形式での保存</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>効果:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-speedometer2 text-success me-2"></i>ユーザー一覧の高速表示</li>
+                        <li><i class="bi bi-person-check text-success me-2"></i>詳細な利用履歴の表示</li>
+                        <li><i class="bi bi-graph-up text-success me-2"></i>正規化された住所データ</li>
+                        <li><i class="bi bi-clock text-success me-2"></i>リアルタイムなユーザー情報更新</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <strong>注意:</strong> この処理は一度だけ実行してください。既存のデータは安全に保持されます。
+                </div>
+            `;
+            
+            modalFooter.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                <button type="button" class="btn btn-primary" onclick="executeUsersDBSetup()">
+                    <i class="bi bi-database"></i> ユーザーDBを作成・移行
+                </button>
+            `;
+            
+            modalInstance.show();
+        }
+
+        // ユーザーDB設定実行
+        async function executeUsersDBSetup() {
+            try {
+                // プログレス表示
+                const modalBody = document.getElementById('modalBody');
+                modalBody.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">処理中...</span>
+                        </div>
+                        <p id="progressMessage">ユーザーDBシートを作成中...</p>
+                    </div>
+                `;
+                
+                // 1. ユーザーDBシート作成
+                document.getElementById('progressMessage').textContent = 'ユーザーDBシートを作成中...';
+                const createResult = await adminApi.createUsersSheet();
+                
+                if (!createResult.success && !createResult.error.includes('既に存在')) {
+                    throw new Error(createResult.error);
+                }
+                
+                // 2. データ移行
+                document.getElementById('progressMessage').textContent = '既存データを移行中...';
+                const migrateResult = await adminApi.migrateToUsersDB();
+                
+                if (!migrateResult.success) {
+                    throw new Error(migrateResult.error);
+                }
+                
+                // 完了
+                modalBody.innerHTML = `
+                    <div class="alert alert-success">
+                        <h5><i class="bi bi-check-circle me-2"></i>ユーザーDB設定完了</h5>
+                        <p>${migrateResult.message}</p>
+                        <ul>
+                            <li>users_dbシートが作成されました</li>
+                            <li>既存データの移行が完了しました</li>
+                            <li>ユーザー管理画面が高速化されました</li>
+                        </ul>
+                    </div>
+                `;
+                
+                document.getElementById('modalFooter').innerHTML = `
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="loadPage('users')">
+                        <i class="bi bi-arrow-clockwise"></i> ユーザー一覧を更新
+                    </button>
+                `;
+                
+            } catch (error) {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5><i class="bi bi-x-circle me-2"></i>エラーが発生しました</h5>
+                        <p>${error.message}</p>
+                        <p class="mb-0">もう一度お試しください。問題が解決しない場合は、システム管理者にお問い合わせください。</p>
+                    </div>
+                `;
+                
+                document.getElementById('modalFooter').innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    <button type="button" class="btn btn-warning" onclick="executeUsersDBSetup()">
+                        <i class="bi bi-arrow-retry"></i> 再試行
+                    </button>
+                `;
+            }
+        }
+
+        // ユーザー同期トリガー管理画面表示
+        async function showUserSyncTriggerManagement() {
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalFooter = document.getElementById('modalFooter');
+            
+            modalTitle.textContent = 'ユーザーデータ自動同期設定';
+            modalBody.innerHTML = '<div class="text-center"><div class="spinner-border text-primary mb-3"></div><p>トリガー状態を確認中...</p></div>';
+            
+            modalInstance.show();
+            
+            try {
+                // トリガー状態を確認
+                const statusResult = await adminApi.getUserSyncTriggerStatus();
+                
+                modalBody.innerHTML = `
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-clock me-2"></i>自動同期について</h5>
+                        <p>reservationシートのデータを定期的にuserシートに自動同期します。</p>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6>同期頻度:</h6>
+                            <p><strong>毎日午前2時</strong> (日本時間)</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>現在の状態:</h6>
+                            <p>
+                                ${statusResult.success && statusResult.data.isActive 
+                                    ? '<span class="badge bg-success">有効</span>' 
+                                    : '<span class="badge bg-secondary">無効</span>'
+                                }
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>同期内容:</h6>
+                        <ul class="small">
+                            <li><strong>基本情報:</strong> 氏名、連絡先、住所（正規化済み）</li>
+                            <li><strong>利用統計:</strong> 総利用回数、平均世帯人数、初回・最終利用日</li>
+                            <li><strong>履歴データ:</strong> 詳細な利用履歴（最新50件）、世帯人数履歴（最新10件）</li>
+                            <li><strong>場所情報:</strong> 利用場所の履歴</li>
+                        </ul>
+                    </div>
+                    
+                    ${statusResult.success && statusResult.data.triggerCount > 0 ? `
+                        <div class="alert alert-success">
+                            <h6><i class="bi bi-check-circle me-2"></i>トリガー詳細</h6>
+                            <p class="mb-0">アクティブなトリガー: ${statusResult.data.triggerCount}個</p>
+                        </div>
+                    ` : ''}
+                `;
+                
+                modalFooter.innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    ${statusResult.success && statusResult.data.isActive 
+                        ? '<button type="button" class="btn btn-warning" onclick="disableUserSyncTrigger()"><i class="bi bi-stop-circle"></i> 自動同期を停止</button>'
+                        : '<button type="button" class="btn btn-success" onclick="enableUserSyncTrigger()"><i class="bi bi-play-circle"></i> 自動同期を開始</button>'
+                    }
+                    <button type="button" class="btn btn-info" onclick="runManualUserSync()">
+                        <i class="bi bi-arrow-repeat"></i> 手動同期実行
+                    </button>
+                `;
+                
+            } catch (error) {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5><i class="bi bi-x-circle me-2"></i>エラーが発生しました</h5>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                
+                modalFooter.innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                `;
+            }
+        }
+
+        // 自動同期トリガーを有効化
+        async function enableUserSyncTrigger() {
+            try {
+                const modalBody = document.getElementById('modalBody');
+                modalBody.innerHTML = '<div class="text-center"><div class="spinner-border text-success mb-3"></div><p>トリガーを設定中...</p></div>';
+                
+                const result = await adminApi.setupUserSyncTrigger();
+                
+                if (result.success) {
+                    modalBody.innerHTML = `
+                        <div class="alert alert-success">
+                            <h5><i class="bi bi-check-circle me-2"></i>自動同期が有効になりました</h5>
+                            <p>${result.message}</p>
+                            <p class="mb-0">毎日午前2時に自動的にuserシートが更新されます。</p>
+                        </div>
+                    `;
+                    
+                    document.getElementById('modalFooter').innerHTML = `
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="showUserSyncTriggerManagement()">
+                            <i class="bi bi-arrow-clockwise"></i> 設定を更新
+                        </button>
+                    `;
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5><i class="bi bi-x-circle me-2"></i>エラーが発生しました</h5>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 自動同期トリガーを無効化
+        async function disableUserSyncTrigger() {
+            try {
+                const modalBody = document.getElementById('modalBody');
+                modalBody.innerHTML = '<div class="text-center"><div class="spinner-border text-warning mb-3"></div><p>トリガーを削除中...</p></div>';
+                
+                const result = await adminApi.deleteUserSyncTriggers();
+                
+                if (result.success) {
+                    modalBody.innerHTML = `
+                        <div class="alert alert-warning">
+                            <h5><i class="bi bi-stop-circle me-2"></i>自動同期が停止されました</h5>
+                            <p>${result.message}</p>
+                            <p class="mb-0">必要に応じて手動同期を実行してください。</p>
+                        </div>
+                    `;
+                    
+                    document.getElementById('modalFooter').innerHTML = `
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="showUserSyncTriggerManagement()">
+                            <i class="bi bi-arrow-clockwise"></i> 設定を更新
+                        </button>
+                    `;
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5><i class="bi bi-x-circle me-2"></i>エラーが発生しました</h5>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // 手動でユーザー同期を実行
+        async function runManualUserSync() {
+            try {
+                const modalBody = document.getElementById('modalBody');
+                modalBody.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-info mb-3"></div>
+                        <p id="syncProgressMessage">手動同期を実行中...</p>
+                    </div>
+                `;
+                
+                const result = await adminApi.runScheduledUserSync();
+                
+                if (result.success) {
+                    modalBody.innerHTML = `
+                        <div class="alert alert-success">
+                            <h5><i class="bi bi-check-circle me-2"></i>手動同期が完了しました</h5>
+                            <p>${result.message}</p>
+                        </div>
+                    `;
+                    
+                    document.getElementById('modalFooter').innerHTML = `
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal" onclick="loadPage('users')">
+                            <i class="bi bi-arrow-clockwise"></i> ユーザー一覧を更新
+                        </button>
+                    `;
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h5><i class="bi bi-x-circle me-2"></i>同期エラーが発生しました</h5>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                
+                document.getElementById('modalFooter').innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    <button type="button" class="btn btn-warning" onclick="runManualUserSync()">
+                        <i class="bi bi-arrow-repeat"></i> 再試行
+                    </button>
+                `;
+            }
+        }
+
+        // ログエクスポート
+        async function exportLogs() {
+            try {
+                const result = await adminApi.exportLogs();
+                
+                if (result.success && result.data) {
+                    // CSV データをBlob として作成
+                    const blob = new Blob([result.data], { type: 'text/csv;charset=utf-8;' });
+                    
+                    // ダウンロードリンクを作成
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `foodbank-logs-${new Date().toISOString().split('T')[0]}.csv`);
+                    link.style.visibility = 'hidden';
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    alert('ログファイルをダウンロードしました');
+                } else {
+                    alert('ログのエクスポートに失敗しました: ' + (result.error || '不明なエラー'));
+                }
+            } catch (error) {
+                alert('エラー: ' + handleApiError(error));
+            }
+        }
+    </script>
+</body>
+</html>

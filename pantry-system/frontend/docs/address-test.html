@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>住所正規化テスト - フードパントリー管理システム</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0"><i class="bi bi-geo-alt me-2"></i>住所正規化テスト</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            このテストでは、同一ユーザーが入力した住所のバリエーションと、正規化後の統一された住所を確認できます。
+                        </div>
+                        
+                        <div class="d-grid gap-2 mb-4">
+                            <button class="btn btn-primary" onclick="runAddressTest()">
+                                <i class="bi bi-play-circle me-2"></i>住所正規化テストを実行
+                            </button>
+                        </div>
+                        
+                        <div id="result" class="mt-4"></div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h6>サンプル正規化例：</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-danger">正規化前（バラバラ）</h6>
+                                <ul class="small">
+                                    <li>市川真間２丁目12−11</li>
+                                    <li>市川市真間２丁目12−11</li>
+                                    <li>市川市真間２丁目−12−11</li>
+                                    <li>市川市真間２丁目</li>
+                                    <li>市川市真間２丁目12-11</li>
+                                    <li>真間</li>
+                                    <li>市川市真間</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-success">正規化後（統一）</h6>
+                                <ul class="small">
+                                    <li><strong>市川真間</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p><a href="admin.html" class="btn btn-sm btn-outline-primary">管理画面へ戻る</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js?v=10"></script>
+    <script>
+        async function runAddressTest() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>処理中...';
+            
+            try {
+                const response = await fetch(CONFIG.API_BASE_URL + '?action=testAddressNormalization');
+                const result = await response.json();
+                
+                if (result.success) {
+                    let html = `
+                        <div class="alert alert-success">
+                            <h5><i class="bi bi-check-circle me-2"></i>住所正規化テスト結果</h5>
+                            <p class="mb-0">${result.data.summary}</p>
+                            <p class="mb-0">総ユーザー数: ${result.data.totalUsers}名</p>
+                        </div>
+                    `;
+                    
+                    if (result.data.details.length > 0) {
+                        html += `
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>氏名</th>
+                                            <th>正規化後住所</th>
+                                            <th>バリエーション数</th>
+                                            <th>元の住所（最大5件表示）</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        
+                        result.data.details.forEach(user => {
+                            const originalAddresses = user.originalAddresses.slice(0, 5).join('<br>');
+                            html += `
+                                <tr>
+                                    <td><strong>${user.name}</strong></td>
+                                    <td><span class="badge bg-success">${user.normalized}</span></td>
+                                    <td><span class="badge bg-warning">${user.originalCount}種類</span></td>
+                                    <td class="small">${originalAddresses}${user.originalAddresses.length > 5 ? '<br>...' : ''}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        html += '</tbody></table></div>';
+                    } else {
+                        html += '<div class="alert alert-info">住所バリエーションがあるユーザーは見つかりませんでした。</div>';
+                    }
+                    
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-x-circle me-2"></i>
+                            エラー: ${result.error || '不明なエラー'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle me-2"></i>
+                        通信エラー: ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

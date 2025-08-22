@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase認証テスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Firebase認証テスト</h1>
+    
+    <div class="info">
+        <h3>Firebase設定確認</h3>
+        <p>プロジェクトID: foodbank-management</p>
+        <p>現在のドメイン: <span id="currentDomain"></span></p>
+    </div>
+
+    <div id="firebaseStatus" class="result">Firebase SDKを読み込み中...</div>
+    
+    <h3>アカウント作成テスト</h3>
+    <input type="email" id="email" placeholder="メールアドレス" value="test@foodbank.local">
+    <input type="password" id="password" placeholder="パスワード" value="test123">
+    <button onclick="testCreateAccount()">アカウント作成テスト</button>
+    <button onclick="testLogin()">ログインテスト</button>
+    
+    <div id="testResult"></div>
+
+    <h3>Firebase Console確認項目</h3>
+    <ul>
+        <li>Authentication → Sign-in method → メール/パスワードが有効か？</li>
+        <li>承認済みドメインに現在のドメインが追加されているか？</li>
+        <li>Firebaseプロジェクトが正しく設定されているか？</li>
+    </ul>
+
+    <script src="js/firebase-config-simple.js"></script>
+    <script>
+        document.getElementById('currentDomain').textContent = window.location.hostname;
+        
+        // Firebase初期化確認
+        setTimeout(() => {
+            if (window.firebaseAuthManager && window.firebaseAuthManager.initialized) {
+                document.getElementById('firebaseStatus').innerHTML = 
+                    '<div class="success">✅ Firebase認証システムが正常に初期化されました</div>';
+            } else {
+                document.getElementById('firebaseStatus').innerHTML = 
+                    '<div class="error">❌ Firebase認証システムの初期化に失敗しました</div>';
+            }
+        }, 3000);
+
+        async function testCreateAccount() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('testResult');
+            
+            resultDiv.innerHTML = '<div class="info">🔄 アカウント作成中...</div>';
+            
+            try {
+                if (!window.firebaseAuthManager) {
+                    throw new Error('Firebase認証システムが読み込まれていません');
+                }
+                
+                const result = await window.firebaseAuthManager.createUserWithEmailAndPassword(email, password);
+                
+                if (result.success) {
+                    resultDiv.innerHTML = 
+                        '<div class="success">✅ アカウント作成成功！<br>' +
+                        'UID: ' + result.user.uid + '<br>' +
+                        'Email: ' + result.user.email + '</div>';
+                } else {
+                    resultDiv.innerHTML = 
+                        '<div class="error">❌ アカウント作成失敗<br>' +
+                        'エラーコード: ' + result.error.code + '<br>' +
+                        'メッセージ: ' + result.error.message + '</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = 
+                    '<div class="error">❌ エラー: ' + error.message + '</div>';
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('testResult');
+            
+            resultDiv.innerHTML = '<div class="info">🔄 ログイン中...</div>';
+            
+            try {
+                if (!window.firebaseAuthManager) {
+                    throw new Error('Firebase認証システムが読み込まれていません');
+                }
+                
+                const result = await window.firebaseAuthManager.signInWithEmailAndPassword(email, password);
+                
+                if (result.success) {
+                    resultDiv.innerHTML = 
+                        '<div class="success">✅ ログイン成功！<br>' +
+                        'UID: ' + result.user.uid + '<br>' +
+                        'Email: ' + result.user.email + '</div>';
+                } else {
+                    resultDiv.innerHTML = 
+                        '<div class="error">❌ ログイン失敗<br>' +
+                        'エラーコード: ' + result.error.code + '<br>' +
+                        'メッセージ: ' + result.error.message + '</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = 
+                    '<div class="error">❌ エラー: ' + error.message + '</div>';
+            }
+        }
+    </script>
+</body>
+</html>

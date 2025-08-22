@@ -1,0 +1,45 @@
+{
+  "name": "foodbank-management-system",
+  "version": "2.0.0",
+  "description": "フードパントリー管理システム v2 - Google Apps Script Web Application",
+  "main": "gas-project/Code.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"テスト環境の構築が必要です\" && exit 1",
+    "deploy": "./auto-deploy.sh",
+    "deploy-fast": "cd gas-project && npx clasp push && npx clasp deploy",
+    "push": "cd gas-project && npx clasp push",
+    "pull": "cd gas-project && npx clasp pull",
+    "open": "cd gas-project && npx clasp open",
+    "logs": "cd gas-project && npx clasp logs",
+    "setup": "cd gas-project && npx clasp run setupNewSystem",
+    "init-project": "cd gas-project && npx clasp create --title 'フードパントリー管理システム_v2' --type webapp",
+    "status": "cd gas-project && npx clasp status",
+    "git-setup": "git init && git remote add origin https://github.com/Jumps710/foodbank.git",
+    "commit": "git add . && git commit -m \"Auto commit - $(date)\"",
+    "push-git": "git push origin main",
+    "full-deploy": "./auto-deploy.sh",
+    "quick-update": "git add . && git commit -m \"Quick update - $(date)\" && git push && cd gas-project && npx clasp push"
+  },
+  "keywords": [
+    "google-apps-script",
+    "food-pantry",
+    "reservation-system",
+    "nonprofit",
+    "community-support"
+  ],
+  "author": "Food Pantry Management Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jumps710/foodbank.git"
+  },
+  "devDependencies": {
+    "@google/clasp": "^3.0.6-alpha"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "liff": {
+    "id": "2007977152-VaXgDOXk",
+    "url": "https://miniapp.line.me/2007977152-VaXgDOXk",
+    "endpoint": "https://jumps710.github.io/foodbank-warehouse/liff/",
+    "size": "full",
+    "scope": ["profile", "openid"]
+  },
+  "channel": {
+    "id": "0512a05c10a4dd420f261bc3d1672e4f",
+    "secret": "0512a05c10a4dd420f261bc3d1672e4f"
+  },
+  "routing": {
+    "form": "#/form",
+    "table": "#/table", 
+    "details": "#/details?id={requestId}",
+    "dashboard": "#/dashboard"
+  }
+}

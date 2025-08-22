@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API接続テスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 API接続テスト</h1>
+    
+    <div class="info">
+        <p><strong>目的:</strong> GAS APIへの接続テストを実行します</p>
+        <p><strong>期待結果:</strong> NetworkタブにHTTPリクエストが表示され、レスポンスを受信</p>
+    </div>
+    
+    <button onclick="testDirectFetch()">直接fetch()テスト</button>
+    <button onclick="testConfigLoad()">Config読み込みテスト</button>
+    <button onclick="testApiClient()">ApiClientテスト</button>
+    <button onclick="clearResults()">結果をクリア</button>
+    
+    <div id="results"></div>
+
+    <script>
+        let resultCount = 0;
+        
+        function addResult(type, title, content) {
+            resultCount++;
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `
+                <h3>${resultCount}. ${title}</h3>
+                <pre>${content}</pre>
+            `;
+            document.getElementById('results').appendChild(div);
+            
+            // 自動スクロール
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            resultCount = 0;
+        }
+        
+        // 1. 直接fetch()テスト
+        async function testDirectFetch() {
+            const url = 'https://script.google.com/macros/s/AKfycbz2twbdzRlljcTMzF26UKI-YDSKA9ijERPuTTICjXydR0kA1jVZiBvtS23CneUKa-j3sw/exec?action=getStatistics';
+            
+            addResult('info', '直接fetch()テスト開始', `URL: ${url}`);
+            
+            try {
+                console.log('🌐 Direct fetch test started:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                console.log('📥 Response received:', response);
+                
+                const text = await response.text();
+                
+                addResult('success', 'レスポンス受信成功', `
+Status: ${response.status} ${response.statusText}
+Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}
+Body: ${text.substring(0, 500)}${text.length > 500 ? '...' : ''}
+                `);
+                
+                try {
+                    const json = JSON.parse(text);
+                    addResult('success', 'JSON解析成功', JSON.stringify(json, null, 2));
+                } catch (parseError) {
+                    addResult('error', 'JSON解析エラー', `${parseError.message}\n\nレスポンステキスト:\n${text}`);
+                }
+                
+            } catch (error) {
+                console.error('❌ Direct fetch error:', error);
+                addResult('error', 'fetch()エラー', `${error.name}: ${error.message}\n\nStack:\n${error.stack}`);
+            }
+        }
+        
+        // 2. Config読み込みテスト
+        function testConfigLoad() {
+            addResult('info', 'Config読み込みテスト開始', 'window.CONFIGの内容を確認');
+            
+            if (typeof CONFIG !== 'undefined') {
+                addResult('success', 'CONFIG読み込み成功', JSON.stringify(CONFIG, null, 2));
+            } else {
+                addResult('error', 'CONFIG未定義', 'CONFIG変数が見つかりません。config.jsが正しく読み込まれていない可能性があります。');
+            }
+        }
+        
+        // 3. ApiClientテスト
+        async function testApiClient() {
+            addResult('info', 'ApiClientテスト開始', 'apiClient.getStatistics()を実行');
+            
+            if (typeof apiClient !== 'undefined') {
+                try {
+                    console.log('🌐 ApiClient test started');
+                    const result = await apiClient.getStatistics();
+                    addResult('success', 'ApiClient成功', JSON.stringify(result, null, 2));
+                } catch (error) {
+                    console.error('❌ ApiClient error:', error);
+                    addResult('error', 'ApiClientエラー', `${error.name}: ${error.message}\n\nStack:\n${error.stack}`);
+                }
+            } else {
+                addResult('error', 'ApiClient未定義', 'apiClient変数が見つかりません。api.jsが正しく読み込まれていない可能性があります。');
+            }
+        }
+    </script>
+    
+    <!-- スクリプト読み込み確認 -->
+    <script src="js/config.js?test=1"></script>
+    <script src="js/api.js?test=1"></script>
+</body>
+</html>

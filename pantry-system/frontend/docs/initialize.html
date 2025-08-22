@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スプレッドシート初期化 - フードパントリー管理システム</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header bg-warning">
+                        <h4 class="mb-0"><i class="bi bi-database me-2"></i>スプレッドシート初期化</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            この操作はスプレッドシートに必要なシートを作成し、サンプルデータを挿入します。
+                        </div>
+                        
+                        <h5>実行する内容：</h5>
+                        <ul>
+                            <li>必要なビューシート（view_pantries, view_users, view_dashboard）を作成</li>
+                            <li>既存のreservationシートからデータを集計</li>
+                            <li>管理シート（admins, log）を作成</li>
+                        </ul>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button class="btn btn-primary" onclick="initializeSpreadsheet()">
+                                <i class="bi bi-database me-2"></i>ハイブリッド構成で初期化
+                            </button>
+                            <button class="btn btn-warning" onclick="updateViews()">
+                                <i class="bi bi-arrow-clockwise me-2"></i>集計ビューを更新
+                            </button>
+                            <button class="btn btn-success" onclick="createSampleData()">
+                                <i class="bi bi-file-plus me-2"></i>サンプルデータを作成
+                            </button>
+                        </div>
+                        
+                        <div id="result" class="mt-4"></div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h6>初期化後は：</h6>
+                        <p><a href="admin.html" class="btn btn-sm btn-outline-primary">管理画面へ移動</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js?v=8"></script>
+    <script>
+        async function apiCall(action) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div>処理中...';
+            
+            try {
+                const response = await fetch(CONFIG.API_BASE_URL + '?action=' + action);
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle me-2"></i>
+                            ${result.message || '処理が完了しました'}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-x-circle me-2"></i>
+                            エラー: ${result.error || '不明なエラー'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle me-2"></i>
+                        通信エラー: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function initializeSpreadsheet() {
+            if (confirm('スプレッドシートを初期化しますか？')) {
+                apiCall('initializeSpreadsheet');
+            }
+        }
+        
+        function createSampleData() {
+            if (confirm('サンプルデータを作成しますか？')) {
+                apiCall('createSampleData');
+            }
+        }
+        
+        function updateViews() {
+            if (confirm('マスターデータから集計ビューを更新しますか？')) {
+                apiCall('updateAllViews');
+            }
+        }
+    </script>
+</body>
+</html>

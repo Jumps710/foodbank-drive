@@ -1,0 +1,152 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "profile.nameKana",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "profile.status", 
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION", 
+      "fields": [
+        {
+          "fieldPath": "statistics.totalVisits",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "metadata.createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "reservations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "pantryId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "reservations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "pantryId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamps.reservedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "reservations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamps.reservedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pantries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "details.eventDate",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "details.status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pantries",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "details.location",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "details.eventDate",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "level",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "administrators",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "profile.status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.lastLogin",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "users",
+      "fieldPath": "profile.nameKana",
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "reservations", 
+      "fieldPath": "timestamps.reservedAt",
+      "indexes": [
+        {
+          "order": "DESCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
+    }
+  ]
+}
