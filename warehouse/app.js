@@ -7,20 +7,17 @@ window.appState = {
     liffData: null
 };
 
-// Support both LIFF and WOFF initialization
-window.onLiffInit = async function(authData) {
-    console.log('Warehouse app initialized', authData);
+// Unified authentication initialization
+window.onAuthInit = async function(authData) {
+    console.log('Warehouse app initialized with platform:', authData.platform);
     
     window.appState.authData = authData;
     window.appState.userProfile = authData.profile;
-    window.appState.platform = authData.platform || 'liff';
+    window.appState.platform = authData.platform;
     
     initRouter();
     handleRoute();
 };
-
-// Alias for WOFF compatibility
-window.onWoffInit = window.onLiffInit;
 
 function initRouter() {
     window.addEventListener('hashchange', handleRoute);
