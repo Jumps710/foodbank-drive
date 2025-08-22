@@ -26,8 +26,11 @@ function detectPlatform() {
     if (currentURL.includes('woff.worksmobile.com') || 
         referrer.includes('woff.worksmobile.com') ||
         referrer.includes('works.do') ||
+        referrer.includes('worksmobile') ||
         userAgent.includes('WORKS') || 
-        userAgent.includes('LineWorks')) {
+        userAgent.includes('LineWorks') ||
+        userAgent.includes('WorksMobile')) {
+        console.log('WOFF platform detected by URL/referrer/UA');
         return 'woff';
     }
     
@@ -83,19 +86,28 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // WOFF initialization
 async function initializeWOFF() {
+    console.log('Initializing WOFF...');
+    
     if (typeof woff === 'undefined') {
+        console.error('WOFF SDK not available');
         throw new Error('WOFF SDK not available');
     }
     
+    console.log('WOFF SDK available, initializing with ID:', WOFF_ID);
     await woff.init({ woffId: WOFF_ID });
     
+    console.log('WOFF initialized, checking login status...');
     if (!woff.isLoggedIn()) {
+        console.log('Not logged in, redirecting to WOFF login...');
         woff.login();
         return;
     }
     
+    console.log('WOFF logged in, getting profile...');
     const profile = await woff.getProfile();
     const context = woff.getContext();
+    
+    console.log('WOFF profile retrieved:', profile);
     
     if (typeof window.onAuthInit === 'function') {
         window.onAuthInit({
