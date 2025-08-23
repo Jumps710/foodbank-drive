@@ -5,19 +5,36 @@ const WOFFManager = {
     
     async init(woffId) {
         try {
+            console.log('🔄 WOFF Manager init starting...');
+            console.log('🔧 WOFF ID:', woffId);
+            console.log('🔧 WOFF SDK available:', typeof woff !== 'undefined');
+            
             if (typeof woff === 'undefined') {
-                throw new Error('WOFF SDKがロードされていません');
+                console.error('❌ WOFF SDK not found');
+                console.log('Available globals:', Object.keys(window).slice(0, 20));
+                throw new Error('WOFF SDKがロードされていません。LINE WORKS環境で開いてください。');
             }
             
-            console.log('🔄 WOFF initialization starting...');
+            console.log('🔄 Calling woff.init...');
             await woff.init({ woffId });
+            console.log('✅ woff.init completed');
+            
+            console.log('🔄 Getting profile...');
             this.profile = await woff.getProfile();
-            console.log('✅ WOFF initialization successful:', this.profile);
+            console.log('✅ Profile obtained:', {
+                userId: this.profile.userId,
+                displayName: this.profile.displayName,
+                department: this.profile.department
+            });
             
             return this.profile;
         } catch (err) {
-            console.error('❌ WOFF initialization failed:', err);
-            throw err;
+            console.error('❌ WOFF initialization failed:', {
+                error: err.message,
+                stack: err.stack,
+                woffAvailable: typeof woff !== 'undefined'
+            });
+            throw new Error(`WOFF初期化エラー: ${err.message}`);
         }
     },
     

@@ -32,14 +32,34 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
         console.error('❌ Initialization failed:', error);
         
-        // Show error message
+        // Show detailed error message
         document.getElementById('loading').innerHTML = `
-            <div class="text-center">
-                <div class="alert alert-danger">
-                    <h5>初期化エラー</h5>
-                    <p>WOFF SDKの初期化に失敗しました。</p>
-                    <p class="small">エラー: ${error.message}</p>
-                    <button class="btn btn-primary" onclick="location.reload()">再試行</button>
+            <div class="container mt-5">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle"></i> 初期化エラー</h5>
+                            <p>WOFF SDKの初期化に失敗しました。</p>
+                            <hr>
+                            <p class="mb-2"><strong>エラー詳細:</strong></p>
+                            <code>${error.message}</code>
+                            <hr>
+                            <p class="mb-2"><strong>確認事項:</strong></p>
+                            <ul class="small">
+                                <li>LINE WORKS環境で開いていますか？</li>
+                                <li>WOFF SDKは読み込まれていますか？</li>
+                                <li>WOFF IDは正しく設定されていますか？</li>
+                            </ul>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="location.reload()">
+                                    <i class="fas fa-refresh"></i> 再試行
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="showDebugInfo()">
+                                    <i class="fas fa-bug"></i> デバッグ情報を表示
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -412,4 +432,30 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Debug function
+function showDebugInfo() {
+    const debugInfo = {
+        userAgent: navigator.userAgent,
+        currentURL: window.location.href,
+        referrer: document.referrer,
+        woffSDK: typeof woff !== 'undefined',
+        woffMethods: typeof woff !== 'undefined' ? Object.keys(woff).slice(0, 10) : 'N/A',
+        windowKeys: Object.keys(window).filter(key => key.toLowerCase().includes('woff')),
+        scripts: Array.from(document.getElementsByTagName('script')).map(s => s.src).filter(s => s.includes('woff'))
+    };
+    
+    console.log('🐛 Debug Info:', debugInfo);
+    
+    alert(`デバッグ情報:
+    
+URL: ${window.location.href}
+Referrer: ${document.referrer}
+UserAgent: ${navigator.userAgent.substring(0, 100)}...
+
+WOFF SDK Available: ${typeof woff !== 'undefined'}
+WOFF Methods: ${typeof woff !== 'undefined' ? Object.keys(woff).slice(0, 5).join(', ') : 'N/A'}
+
+詳細はvConsoleログを確認してください。`);
 }
