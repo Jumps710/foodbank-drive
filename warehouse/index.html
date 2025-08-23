@@ -45,10 +45,6 @@
             }
         });
     </script>
-    <!-- LIFF SDK -->
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <!-- WOFF SDK -->
-    <script src="https://static.line-scdn.net/woff/edge/2/sdk.js"></script>
     <!-- Cache busting script -->
     <script>
         // Dynamic cache buster
@@ -61,11 +57,47 @@
             location.reload(true);
         }
     </script>
-    <!-- Unified Authentication -->
-    <script src="common/js/auth-init.js?v=20250822-3"></script>
-    <!-- Views (inline in app.js for now) -->
-    <!-- Main App -->
-    <script src="app.js?v=20250822-3"></script>
+    
+    <!-- SDK Load Monitor -->
+    <script>
+        window.sdkLoadStatus = {
+            liff: false,
+            woff: false,
+            startTime: Date.now()
+        };
+        
+        // Monitor SDK loading
+        const checkSDKs = setInterval(() => {
+            if (typeof liff !== 'undefined' && !window.sdkLoadStatus.liff) {
+                window.sdkLoadStatus.liff = true;
+                console.log('LIFF SDK loaded after', Date.now() - window.sdkLoadStatus.startTime, 'ms');
+            }
+            if (typeof woff !== 'undefined' && !window.sdkLoadStatus.woff) {
+                window.sdkLoadStatus.woff = true;
+                console.log('WOFF SDK loaded after', Date.now() - window.sdkLoadStatus.startTime, 'ms');
+            }
+            if (window.sdkLoadStatus.liff && window.sdkLoadStatus.woff) {
+                clearInterval(checkSDKs);
+                console.log('All SDKs loaded');
+            }
+        }, 50);
+        
+        // Timeout after 10 seconds
+        setTimeout(() => {
+            clearInterval(checkSDKs);
+            console.warn('SDK load monitoring timeout');
+        }, 10000);
+    </script>
+    
+    <!-- LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
+    <!-- WOFF SDK -->
+    <script src="https://static.line-scdn.net/woff/edge/2/sdk.js" defer></script>
+    
+    <!-- Unified Authentication - Load after SDKs -->
+    <script src="common/js/auth-init.js?v=20250823-1" defer></script>
+    <!-- Main App - Load after auth -->
+    <script src="app.js?v=20250823-1" defer></script>
     
     <!-- Force cache refresh -->
     <script>
