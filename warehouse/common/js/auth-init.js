@@ -162,21 +162,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Wait for SDK if needed
         if (platform === 'woff') {
+            // Check if WOFF SDK is available or mock is created
             if (typeof woff === 'undefined') {
                 console.log('WOFF platform detected but SDK not available, waiting...');
                 const loaded = await waitForSDK('woff');
                 if (!loaded) {
-                    // For staff page, try to continue anyway with mock data
-                    if (currentURL.includes('staff.html')) {
-                        console.warn('WOFF SDK timeout on staff page, continuing with mock authentication');
-                        platform = 'dev'; // Use development mode with staff role
+                    console.warn('WOFF SDK failed to load completely');
+                    // Check if we have a mock WOFF or load failed
+                    if (window.woffLoadStatus === 'failed' && typeof woff !== 'undefined') {
+                        console.log('Using mock WOFF object for authentication');
+                        platform = 'woff'; // Continue with WOFF platform using mock
+                    } else if (currentURL.includes('staff.html')) {
+                        console.warn('Staff page: forcing development mode due to WOFF unavailability');
+                        platform = 'dev';
                     } else {
                         console.warn('WOFF SDK load timeout, falling back to development mode');
                         platform = 'dev';
                     }
                 }
             } else {
-                console.log('WOFF SDK already available');
+                console.log('WOFF SDK available (real or mock)');
             }
         } else if (platform === 'liff') {
             if (typeof liff === 'undefined') {
@@ -278,6 +283,7 @@ async function initializeWOFF() {
         if (typeof woff === 'undefined') {
             console.error('WOFF SDK not loaded');
             console.log('Available globals:', Object.keys(window).filter(key => key.toLowerCase().includes('woff')));
+            console.log('WOFF load status:', window.woffLoadStatus);
             
             // Try alternative SDK access methods
             if (window.woff) {
@@ -286,6 +292,12 @@ async function initializeWOFF() {
             } else {
                 throw new Error('WOFF SDK not available - check if SDK script loaded');
             }
+        }
+        
+        // Check if this is a mock WOFF object
+        const isMockWOFF = woff && woff.getVersion && woff.getVersion().includes('mock');
+        if (isMockWOFF) {
+            console.log('Detected mock WOFF object - using for testing');
         }
         
         console.log('WOFF SDK available, methods:', Object.keys(woff));
