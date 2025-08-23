@@ -16,6 +16,16 @@ window.onAuthInit = async function(authData) {
     window.appState.platform = authData.platform;
     window.appState.userRole = 'admin'; // Force admin role for staff
     
+    // Override profile for dev mode on staff page
+    if (authData.platform === 'dev') {
+        window.appState.userProfile = {
+            userId: 'staff-dev-user-id',
+            displayName: 'Development Staff User',
+            pictureUrl: ''
+        };
+        console.log('Using development staff profile');
+    }
+    
     initRouter();
     handleRoute();
 };

@@ -23,13 +23,18 @@ function detectPlatform() {
     });
     
     // Check if accessed via WOFF URL or referrer
-    if (currentURL.includes('woff.worksmobile.com') || 
+    const isWoffEnvironment = currentURL.includes('woff.worksmobile.com') || 
         referrer.includes('woff.worksmobile.com') ||
         referrer.includes('works.do') ||
         referrer.includes('worksmobile') ||
         userAgent.includes('WORKS') || 
         userAgent.includes('LineWorks') ||
-        userAgent.includes('WorksMobile')) {
+        userAgent.includes('WorksMobile') ||
+        // Additional WOFF indicators
+        userAgent.includes('Mobile/') && referrer.includes('worksmobile') ||
+        currentURL.includes('staff.html'); // Staff page defaults to WOFF
+        
+    if (isWoffEnvironment) {
         console.log('WOFF platform detected by URL/referrer/UA');
         return 'woff';
     }
@@ -75,23 +80,57 @@ function detectPlatform() {
 }
 
 // Wait for SDK load with retry mechanism
-async function waitForSDK(sdkName, timeout = 5000) {
+async function waitForSDK(sdkName, timeout = 15000) { // Increased timeout to 15 seconds
     const startTime = Date.now();
-    const checkInterval = 100;
+    const checkInterval = 200; // Increased interval for better performance
+    
+    console.log(`Starting ${sdkName.toUpperCase()} SDK wait...`);
     
     while (Date.now() - startTime < timeout) {
-        if (sdkName === 'woff' && typeof woff !== 'undefined') {
-            console.log('WOFF SDK detected after', Date.now() - startTime, 'ms');
-            return true;
+        // Check multiple ways to access the SDK
+        if (sdkName === 'woff') {
+            if (typeof woff !== 'undefined' || typeof window.woff !== 'undefined') {
+                const detectedTime = Date.now() - startTime;
+                console.log(`WOFF SDK detected after ${detectedTime}ms`);
+                
+                // Ensure woff is globally accessible
+                if (typeof woff === 'undefined' && typeof window.woff !== 'undefined') {
+                    window.woff = window.woff;
+                    console.log('Set window.woff to global woff');
+                }
+                
+                return true;
+            }
         }
-        if (sdkName === 'liff' && typeof liff !== 'undefined') {
-            console.log('LIFF SDK detected after', Date.now() - startTime, 'ms');
-            return true;
+        
+        if (sdkName === 'liff') {
+            if (typeof liff !== 'undefined' || typeof window.liff !== 'undefined') {
+                const detectedTime = Date.now() - startTime;
+                console.log(`LIFF SDK detected after ${detectedTime}ms`);
+                
+                // Ensure liff is globally accessible
+                if (typeof liff === 'undefined' && typeof window.liff !== 'undefined') {
+                    window.liff = window.liff;
+                    console.log('Set window.liff to global liff');
+                }
+                
+                return true;
+            }
         }
+        
+        // Log progress every 2 seconds
+        if ((Date.now() - startTime) % 2000 < checkInterval) {
+            console.log(`Still waiting for ${sdkName.toUpperCase()} SDK... (${Math.round((Date.now() - startTime) / 1000)}s)`);
+        }
+        
         await new Promise(resolve => setTimeout(resolve, checkInterval));
     }
     
     console.error(`${sdkName.toUpperCase()} SDK not loaded after ${timeout}ms`);
+    console.error('Final SDK status check:', {
+        [sdkName]: typeof window[sdkName] !== 'undefined',
+        windowKeys: Object.keys(window).filter(key => key.toLowerCase().includes(sdkName))
+    });
     return false;
 }
 
@@ -122,21 +161,33 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
         
         // Wait for SDK if needed
-        if (platform === 'woff' && typeof woff === 'undefined') {
-            console.log('Waiting for WOFF SDK to load...');
-            const loaded = await waitForSDK('woff');
-            if (!loaded) {
-                // Try development mode as fallback
-                console.warn('WOFF SDK load timeout, falling back to development mode');
-                platform = 'dev';
+        if (platform === 'woff') {
+            if (typeof woff === 'undefined') {
+                console.log('WOFF platform detected but SDK not available, waiting...');
+                const loaded = await waitForSDK('woff');
+                if (!loaded) {
+                    // For staff page, try to continue anyway with mock data
+                    if (currentURL.includes('staff.html')) {
+                        console.warn('WOFF SDK timeout on staff page, continuing with mock authentication');
+                        platform = 'dev'; // Use development mode with staff role
+                    } else {
+                        console.warn('WOFF SDK load timeout, falling back to development mode');
+                        platform = 'dev';
+                    }
+                }
+            } else {
+                console.log('WOFF SDK already available');
             }
-        } else if (platform === 'liff' && typeof liff === 'undefined') {
-            console.log('Waiting for LIFF SDK to load...');
-            const loaded = await waitForSDK('liff');
-            if (!loaded) {
-                // Try development mode as fallback
-                console.warn('LIFF SDK load timeout, falling back to development mode');
-                platform = 'dev';
+        } else if (platform === 'liff') {
+            if (typeof liff === 'undefined') {
+                console.log('LIFF platform detected but SDK not available, waiting...');
+                const loaded = await waitForSDK('liff');
+                if (!loaded) {
+                    console.warn('LIFF SDK load timeout, falling back to development mode');
+                    platform = 'dev';
+                }
+            } else {
+                console.log('LIFF SDK already available');
             }
         }
         

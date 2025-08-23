@@ -90,10 +90,22 @@
         }, 10000);
     </script>
     
+    <!-- WOFF SDK - Load first for staff page -->
+    <script src="https://static.line-scdn.net/woff/edge/2/sdk.js"></script>
     <!-- LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
-    <!-- WOFF SDK -->
-    <script src="https://static.line-scdn.net/woff/edge/2/sdk.js" defer></script>
+    
+    <!-- Manual WOFF SDK fallback -->
+    <script>
+        // Fallback WOFF SDK loading if CDN fails
+        if (typeof woff === 'undefined') {
+            console.warn('Primary WOFF SDK not loaded, trying fallback...');
+            const fallbackScript = document.createElement('script');
+            fallbackScript.src = 'https://static.line-scdn.net/woff/edge/versions/2.22.1/sdk.js';
+            fallbackScript.async = false;
+            document.head.appendChild(fallbackScript);
+        }
+    </script>
     
     <!-- Unified Authentication - Load after SDKs -->
     <script src="common/js/auth-init.js?v=20250823-1" defer></script>
