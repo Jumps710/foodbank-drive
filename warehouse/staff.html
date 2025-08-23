@@ -118,9 +118,18 @@
                 console.error('Fallback WOFF SDK also failed:', error2);
                 window.woffLoadStatus = 'failed';
                 
-                // Create mock WOFF object for development
-                console.warn('Creating mock WOFF object for development');
-                window.woff = createMockWOFF();
+                // Only create mock if explicitly requested or in development
+                const urlParams = new URLSearchParams(window.location.search);
+                const forceMock = urlParams.get('force-mock') === 'true';
+                const isLocalDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                
+                if (forceMock || isLocalDev) {
+                    console.warn('Creating mock WOFF object for development');
+                    window.woff = createMockWOFF();
+                } else {
+                    console.error('WOFF SDK completely unavailable and not in development mode');
+                    window.woffLoadStatus = 'unavailable';
+                }
             };
             document.head.appendChild(woffScript2);
         };
@@ -169,25 +178,46 @@
     
     <!-- URL parameter handling for testing -->
     <script>
-        // Check for test parameters
+        // Check for test parameters - only override if explicitly requested
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('force-mock') === 'true') {
-            console.log('Force mock mode enabled by URL parameter');
-            window.woff = {
-                init: () => Promise.resolve({ success: true }),
-                isLoggedIn: () => true,
-                login: () => Promise.resolve(),
-                getProfile: () => Promise.resolve({
-                    userId: 'force-mock-staff-' + Date.now(),
-                    displayName: 'Force Mock Staff User',
-                    pictureUrl: ''
-                }),
-                getContext: () => ({ type: 'staff', userId: 'force-mock-staff', viewType: 'full' }),
-                isInClient: () => true,
-                getLanguage: () => 'ja',
-                getVersion: () => '2.0.0-force-mock'
-            };
-            window.woffLoadStatus = 'force-mock';
+            console.warn('⚠️  FORCE MOCK MODE ENABLED - This will override real WOFF SDK!');
+            console.warn('⚠️  Remove ?force-mock=true from URL to use real LINE WORKS authentication');
+            
+            // Wait a bit to ensure we're not interfering with real SDK loading
+            setTimeout(() => {
+                window.woff = {
+                    init: () => {
+                        console.log('🤖 Mock WOFF init called');
+                        return Promise.resolve({ success: true });
+                    },
+                    isLoggedIn: () => {
+                        console.log('🤖 Mock WOFF isLoggedIn called');
+                        return true;
+                    },
+                    login: () => {
+                        console.log('🤖 Mock WOFF login called');
+                        return Promise.resolve();
+                    },
+                    getProfile: () => {
+                        console.log('🤖 Mock WOFF getProfile called');
+                        return Promise.resolve({
+                            userId: 'force-mock-staff-' + Date.now(),
+                            displayName: 'Force Mock Staff User',
+                            pictureUrl: ''
+                        });
+                    },
+                    getContext: () => {
+                        console.log('🤖 Mock WOFF getContext called');
+                        return { type: 'staff', userId: 'force-mock-staff', viewType: 'full' };
+                    },
+                    isInClient: () => true,
+                    getLanguage: () => 'ja',
+                    getVersion: () => '2.0.0-force-mock'
+                };
+                window.woffLoadStatus = 'force-mock';
+                console.warn('🤖 Mock WOFF object installed');
+            }, 100);
         }
     </script>
     

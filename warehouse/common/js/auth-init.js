@@ -167,16 +167,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 console.log('WOFF platform detected but SDK not available, waiting...');
                 const loaded = await waitForSDK('woff');
                 if (!loaded) {
-                    console.warn('WOFF SDK failed to load completely');
-                    // Check if we have a mock WOFF or load failed
-                    if (window.woffLoadStatus === 'failed' && typeof woff !== 'undefined') {
-                        console.log('Using mock WOFF object for authentication');
-                        platform = 'woff'; // Continue with WOFF platform using mock
-                    } else if (currentURL.includes('staff.html')) {
-                        console.warn('Staff page: forcing development mode due to WOFF unavailability');
-                        platform = 'dev';
+                    console.warn('WOFF SDK failed to load within timeout period');
+                    
+                    // Final check for WOFF availability
+                    if (typeof woff !== 'undefined') {
+                        console.log('WOFF object detected after timeout - proceeding');
+                        platform = 'woff'; // Continue with WOFF platform
+                    } else if (window.woffLoadStatus === 'unavailable') {
+                        console.error('WOFF SDK completely unavailable');
+                        if (currentURL.includes('staff.html')) {
+                            console.warn('Staff page: switching to development mode');
+                            platform = 'dev';
+                        } else {
+                            platform = 'dev';
+                        }
                     } else {
-                        console.warn('WOFF SDK load timeout, falling back to development mode');
+                        console.warn('WOFF SDK status unclear, falling back to development mode');
                         platform = 'dev';
                     }
                 }
@@ -295,9 +301,15 @@ async function initializeWOFF() {
         }
         
         // Check if this is a mock WOFF object
-        const isMockWOFF = woff && woff.getVersion && woff.getVersion().includes('mock');
+        const isMockWOFF = woff && woff.getVersion && (
+            typeof woff.getVersion === 'function' && 
+            woff.getVersion().includes('mock')
+        );
+        
         if (isMockWOFF) {
-            console.log('Detected mock WOFF object - using for testing');
+            console.log('Detected mock WOFF object - using for testing only');
+        } else {
+            console.log('Detected real WOFF SDK - using for actual LINE WORKS authentication');
         }
         
         console.log('WOFF SDK available, methods:', Object.keys(woff));
