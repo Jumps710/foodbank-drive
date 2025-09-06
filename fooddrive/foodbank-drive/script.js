@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         woff
             .init({
-                woffId: "i9AAULJF0_LfuBUa3IZMGQ"
+                woffId: "Bv2kAkzN6gcZ0nD0brpMpg"
             })
             .then(() => {
                 console.log("✅ WOFF APIが正常に初期化されました");
