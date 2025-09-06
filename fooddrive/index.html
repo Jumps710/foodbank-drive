@@ -82,31 +82,21 @@
         </div>
     </div>
 
-    <!-- VConsole for debugging -->
-    <script src="https://unpkg.com/vconsole@3.15.1/dist/vconsole.min.js"></script>
+    <!-- VConsole for debugging (only when debug=true) -->
     <script>
-        // VConsoleを強制初期化
-        try {
-            window.vConsole = new window.VConsole();
-            console.log('✅ VConsole initialized successfully');
-            
-            // VConsoleボタンを強制表示
-            setTimeout(() => {
-                const vConsoleButton = document.querySelector('#__vconsole .vc-switch');
-                if (vConsoleButton) {
-                    vConsoleButton.style.display = 'block';
-                    vConsoleButton.style.position = 'fixed';
-                    vConsoleButton.style.zIndex = '99999';
-                    vConsoleButton.style.bottom = '10px';
-                    vConsoleButton.style.right = '10px';
-                    console.log('✅ VConsoleボタンを強制表示');
-                } else {
-                    console.warn('⚠️ VConsoleボタンが見つかりません');
+        // デバッグモードの場合のみVConsoleを読み込み
+        if (window.location.search.includes('debug=true')) {
+            const vConsoleScript = document.createElement('script');
+            vConsoleScript.src = 'https://unpkg.com/vconsole@3.15.1/dist/vconsole.min.js';
+            vConsoleScript.onload = function() {
+                try {
+                    window.vConsole = new window.VConsole();
+                    console.log('✅ VConsole initialized for debug mode');
+                } catch (e) {
+                    console.error('❌ VConsole初期化失敗:', e);
                 }
-            }, 1000);
-        } catch (e) {
-            console.error('❌ VConsole初期化失敗:', e);
-            alert('VConsole初期化失敗: ' + e.message);
+            };
+            document.head.appendChild(vConsoleScript);
         }
     </script>
     

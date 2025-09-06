@@ -19,63 +19,35 @@ document.addEventListener('DOMContentLoaded', function () {
     let userId = '';       // WOFF APIで取得するユーザーIDを保持する変数
     let donatorForSubmit = ''; // 送信用のdonator名を保持する変数
 
-    // デバッグ情報表示用の要素を作成
+    // デバッグ情報表示用の要素を作成（本番用：非表示）
     const createDebugInfo = () => {
         const debugDiv = document.createElement('div');
         debugDiv.id = 'debugInfo';
         debugDiv.style.cssText = `
             position: fixed; 
-            top: 10px; 
-            left: 10px; 
-            background: rgba(255,0,0,0.9); 
+            bottom: 10px; 
+            right: 10px; 
+            background: rgba(0,0,0,0.7); 
             color: white; 
-            padding: 15px; 
-            font-size: 14px; 
-            max-width: 90%; 
-            width: 350px;
-            z-index: 99999; 
-            border-radius: 8px;
-            font-family: Arial, sans-serif;
-            border: 3px solid yellow;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            padding: 8px; 
+            font-size: 11px; 
+            max-width: 200px; 
+            z-index: 9999; 
+            border-radius: 4px;
+            font-family: monospace;
+            display: none;
         `;
         
-        const userAgent = navigator.userAgent;
-        const referrer = document.referrer;
-        
         debugDiv.innerHTML = `
-            <div><strong>🔍 WOFF DEBUG PANEL</strong></div>
-            <div style="margin: 5px 0; border-top: 1px solid white; padding-top: 5px;">
-                <strong>Environment:</strong><br>
-                UA: ${userAgent.includes('WORKS') ? '✅ WORKS' : '❌ NOT_WORKS'}<br>
-                Referrer: ${referrer ? (referrer.includes('woff.worksmobile.com') ? '✅ WOFF_URL' : '⚠️ OTHER') : '❌ NONE'}<br>
-                URL: ${location.hostname}
-            </div>
-            <div style="margin: 5px 0; border-top: 1px solid white; padding-top: 5px;">
-                <div id="woffStatus">WOFF: 🔄 初期化中...</div>
-                <div id="userInfo">User: ⏳ 未取得</div>
-                <div id="statusInfo">Status: 📝 準備中</div>
-            </div>
-            <div style="margin: 5px 0; border-top: 1px solid white; padding-top: 5px; font-size: 12px;">
-                <div>Time: ${new Date().toLocaleTimeString()}</div>
-                <div>Protocol: ${location.protocol}</div>
-            </div>
+            <div id="woffStatus">WOFF: 初期化中</div>
+            <div id="userInfo">User: 未取得</div>
         `;
         document.body.appendChild(debugDiv);
         
-        // クリックで詳細情報を表示
-        debugDiv.addEventListener('click', () => {
-            alert(`DETAILED DEBUG INFO:
-User Agent: ${navigator.userAgent}
-Referrer: ${document.referrer}
-URL: ${window.location.href}
-Protocol: ${window.location.protocol}
-Host: ${window.location.host}
-Parent: ${window.parent === window ? 'SAME' : 'DIFFERENT'}
-Top: ${window.top === window ? 'SAME' : 'DIFFERENT'}
-Screen: ${screen.width}x${screen.height}
-Window: ${window.innerWidth}x${window.innerHeight}`);
-        });
+        // 開発時のみ表示（URLにdebugパラメータがある場合）
+        if (window.location.search.includes('debug=true')) {
+            debugDiv.style.display = 'block';
+        }
         
         return debugDiv;
     };
@@ -120,25 +92,10 @@ function logEnvironmentInfo() {
     console.log("- WORKS in UA:", navigator.userAgent.includes('WORKS'));
 }
 
-// ページ読み込み開始時点でのログ
-console.log('🚀 PAGE LOADING START');
-console.log('Timestamp:', new Date().toISOString());
-console.log('URL:', window.location.href);
-console.log('Referrer:', document.referrer);
-console.log('User Agent:', navigator.userAgent);
-
-// DOMContentLoaded前でもログを出力
-updateDebugInfo('📄 DOM読込中', '', 'ページ解析中');
-
 // ページが読み込まれたときに環境情報をログに記録する
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('📄 DOM CONTENT LOADED');
-    updateDebugInfo('📄 DOM完了', '', 'パラメータ解析中');
-    
     logQueryParameters();
     logEnvironmentInfo();
-    
-    updateDebugInfo('🔍 環境解析完了', '', 'SDK読込待機中');
 });
 
 
@@ -250,45 +207,19 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     };
 
-    // モバイルアプリからの実行状況を詳細確認
-    const logMobileAppContext = () => {
-        console.log("📱 モバイルアプリコンテキスト詳細:");
-        console.log("- navigator.userAgent:", navigator.userAgent);
-        console.log("- document.referrer:", document.referrer);
-        console.log("- window.location.href:", window.location.href);
-        console.log("- window.location.hostname:", window.location.hostname);
-        console.log("- window.location.protocol:", window.location.protocol);
-        console.log("- window.parent === window:", window.parent === window);
-        console.log("- window.top === window:", window.top === window);
-        console.log("- window.opener:", window.opener);
-        
-        // LINE WORKS特有のオブジェクトチェック
-        console.log("- window.WorksMobile:", typeof window.WorksMobile);
-        console.log("- window.wm:", typeof window.wm);
-        console.log("- window.webkit:", typeof window.webkit);
-        
-        // viewport情報
-        console.log("- screen.width:", screen.width);
-        console.log("- screen.height:", screen.height);
-        console.log("- window.innerWidth:", window.innerWidth);
-        console.log("- window.innerHeight:", window.innerHeight);
-    };
-
     // 遅延初期化（WOFF SDKの読み込み完了を待つ）
     const delayedInitialize = (retryCount = 0) => {
         const maxRetries = 5;
         
         if (typeof woff !== 'undefined') {
-            console.log(`✅ WOFF SDK確認済み (${retryCount}回目)`);
-            logMobileAppContext(); // モバイルアプリコンテキストを詳細ログ
+            console.log(`WOFF SDK確認済み (${retryCount}回目)`);
             initializeWoff();
         } else if (retryCount < maxRetries) {
-            console.log(`⏳ WOFF SDK待機中 (${retryCount + 1}/${maxRetries})`);
+            console.log(`WOFF SDK待機中 (${retryCount + 1}/${maxRetries})`);
             setTimeout(() => delayedInitialize(retryCount + 1), 1000);
         } else {
-            console.error("❌ WOFF SDK読み込みタイムアウト");
-            updateDebugInfo("❌ SDK未読込");
-            alert("WOFF SDKの読み込みに失敗しました。");
+            console.error("WOFF SDK読み込みタイムアウト");
+            updateDebugInfo("SDK未読込");
         }
     };
 
