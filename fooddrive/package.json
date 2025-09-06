@@ -1,0 +1,27 @@
+{
+  "name": "foodbank-drive-management",
+  "version": "1.0.0",
+  "description": "フードドライブ入庫管理システム",
+  "scripts": {
+    "login": "clasp login",
+    "create": "clasp create --type webapp --title 'フードドライブ入庫管理GAS' --rootDir ./gas",
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "open": "clasp open",
+    "deploy": "clasp deploy",
+    "watch": "clasp push --watch",
+    "logs": "clasp logs"
+  },
+  "keywords": [
+    "foodbank",
+    "line-works",
+    "gas",
+    "google-apps-script"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "@types/google-apps-script": "^1.0.83"
+  }
+}

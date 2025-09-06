@@ -1,0 +1,68 @@
+name: Deploy to GitHub Pages and GAS
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./foodbank-drive
+          exclude_assets: '.github,node_modules,gas,backup,*.json,*.md,*.html'
+
+  deploy-gas:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Setup clasp
+        run: |
+          echo "${{ secrets.CLASP_CREDENTIALS }}" > ~/.clasprc.json
+          echo '{"scriptId":"${{ secrets.GAS_SCRIPT_ID }}","rootDir":"./gas"}' > .clasp.json
+
+      - name: Push to Google Apps Script
+        run: npm run push
+
+  lint-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Validate HTML
+        uses: Cyb3r-Jak3/html5validator-action@v7.2.0
+        with:
+          root: foodbank-drive/
+          file_ext: html
+          log_level: INFO
+
+      - name: Validate JavaScript
+        run: |
+          npx jshint foodbank-drive/script.js || true

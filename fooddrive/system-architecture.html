@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>フードドライブ入庫管理システム - システム構成図</title>
+    <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .diagram-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>フードドライブ入庫管理システム - システム構成図</h1>
+        
+        <h2>1. システム全体構成</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                graph TB
+                    subgraph "LINE WORKS"
+                        A[ユーザー<br/>LINE WORKSアプリ]
+                    end
+                    
+                    subgraph "フロントエンド"
+                        B[GitHub Pages<br/>index.html]
+                        C[JavaScript<br/>script.js]
+                        D[CSS<br/>styles.css]
+                        E[WOFF SDK v3.6]
+                    end
+                    
+                    subgraph "バックエンド"
+                        F[Google Apps Script<br/>Web App]
+                        G[Google Sheets<br/>データ保存]
+                    end
+                    
+                    subgraph "外部サービス"
+                        H[画像ストレージ<br/>Google Drive]
+                    end
+                    
+                    A -->|WOFF経由アクセス| B
+                    B --> C
+                    B --> D
+                    C --> E
+                    E -->|ユーザー情報取得| A
+                    C -->|HTTPリクエスト<br/>POST| F
+                    F -->|データ書き込み| G
+                    F -->|画像保存| H
+                    
+                    style A fill:#e1f5fe
+                    style B fill:#fff3e0
+                    style F fill:#e8f5e9
+                    style G fill:#e8f5e9
+            </div>
+        </div>
+
+        <h2>2. データフロー図</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                sequenceDiagram
+                    participant U as ユーザー
+                    participant LW as LINE WORKS
+                    participant FE as フロントエンド
+                    participant WOFF as WOFF SDK
+                    participant GAS as Google Apps Script
+                    participant GS as Google Sheets
+                    
+                    U->>LW: アプリ起動
+                    LW->>FE: Webページ表示
+                    FE->>WOFF: 初期化
+                    WOFF->>LW: ユーザー情報要求
+                    LW-->>WOFF: ユーザー情報返却
+                    WOFF-->>FE: displayName, userId
+                    
+                    U->>FE: フォーム入力
+                    U->>FE: 写真アップロード
+                    FE->>FE: 画像をBase64変換
+                    U->>FE: 送信ボタンクリック
+                    FE->>FE: 確認モーダル表示
+                    U->>FE: 確認・送信
+                    
+                    FE->>GAS: POSTリクエスト<br/>(フォームデータ+画像)
+                    GAS->>GS: データ保存
+                    GAS->>GAS: 画像をDriveに保存
+                    GAS-->>FE: 処理結果返却
+                    FE-->>U: 完了メッセージ表示
+            </div>
+        </div>
+
+        <h2>3. コンポーネント関係図</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                graph LR
+                    subgraph "クライアントサイド"
+                        A[index.html<br/>UI定義]
+                        B[script.js<br/>ビジネスロジック]
+                        C[styles.css<br/>スタイル定義]
+                        D[WOFF SDK<br/>LINE WORKS連携]
+                    end
+                    
+                    subgraph "サーバーサイド"
+                        E[GAS Web App<br/>APIエンドポイント]
+                        F[doPost関数<br/>リクエスト処理]
+                        G[SpreadsheetApp<br/>データ操作]
+                        H[DriveApp<br/>ファイル操作]
+                    end
+                    
+                    subgraph "データストア"
+                        I[(Google Sheets<br/>寄付データ)]
+                        J[(Google Drive<br/>写真データ)]
+                    end
+                    
+                    A --> B
+                    A --> C
+                    B --> D
+                    B -->|HTTP POST| E
+                    E --> F
+                    F --> G
+                    F --> H
+                    G --> I
+                    H --> J
+            </div>
+        </div>
+
+        <h2>4. セキュリティ構成</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                graph TB
+                    subgraph "認証・認可"
+                        A[LINE WORKS<br/>ユーザー認証]
+                        B[WOFF SDK<br/>アプリ内検証]
+                        C[GAS<br/>エンドポイント公開]
+                    end
+                    
+                    subgraph "データ保護"
+                        D[HTTPS通信]
+                        E[Base64エンコード<br/>画像転送]
+                        F[Google認証<br/>Sheets/Drive]
+                    end
+                    
+                    A --> B
+                    B --> D
+                    D --> C
+                    C --> F
+                    E --> D
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#fff',
+                primaryTextColor: '#000',
+                primaryBorderColor: '#000',
+                lineColor: '#000',
+                secondaryColor: '#f5f5f5',
+                tertiaryColor: '#fff'
+            }
+        });
+    </script>
+</body>
+</html>

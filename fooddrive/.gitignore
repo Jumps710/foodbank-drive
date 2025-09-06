@@ -1,0 +1,28 @@
+# Node modules
+node_modules/
+
+# Clasp credentials
+.clasp.json
+
+# Environment variables
+.env
+.env.local
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+backup/
+
+# Temporary files
+*.tmp
+temp/

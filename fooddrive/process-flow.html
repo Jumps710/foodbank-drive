@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>フードドライブ入庫管理システム - 処理フロー図</title>
+    <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .diagram-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .description {
+            margin: 10px 0;
+            padding: 15px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>フードドライブ入庫管理システム - 処理フロー図</h1>
+        
+        <h2>1. メイン処理フロー</h2>
+        <div class="description">
+            ユーザーがアプリケーションを起動してから、データが保存されるまでの全体的な処理フローです。
+        </div>
+        <div class="diagram-container">
+            <div class="mermaid">
+                flowchart TD
+                    Start([開始]) --> A[LINE WORKSアプリ起動]
+                    A --> B{WOFF環境チェック}
+                    B -->|Yes| C[WOFF初期化]
+                    B -->|No| Alert[アラート表示<br/>LINE WORKSアプリ内で<br/>使用してください]
+                    Alert --> End([終了])
+                    
+                    C --> D[ユーザープロファイル取得]
+                    D --> E[フォーム表示]
+                    E --> F[ユーザー入力待機]
+                    
+                    F --> G{入力イベント}
+                    G -->|寄付者選択| H{その他？}
+                    H -->|Yes| I[企業/団体名<br/>入力欄表示]
+                    H -->|No| F
+                    I --> F
+                    
+                    G -->|写真選択| J[ファイル選択<br/>プレビュー表示]
+                    J --> F
+                    
+                    G -->|送信ボタン| K[入力検証]
+                    K --> L{検証OK？}
+                    L -->|No| M[エラー表示]
+                    M --> F
+                    L -->|Yes| N[確認モーダル表示]
+                    
+                    N --> O{確認？}
+                    O -->|キャンセル| F
+                    O -->|確認| P[送信処理開始]
+                    
+                    P --> Q[処理中表示]
+                    Q --> R[データ準備<br/>Base64変換等]
+                    R --> S[GASへPOST送信]
+                    S --> T{送信成功？}
+                    T -->|Yes| U[成功メッセージ]
+                    T -->|No| V[エラーメッセージ]
+                    U --> W[フォームリセット]
+                    W --> End
+                    V --> End
+            </div>
+        </div>
+
+        <h2>2. WOFF初期化フロー</h2>
+        <div class="description">
+            LINE WORKS WOFF SDKの初期化とユーザー情報取得の詳細フローです。
+        </div>
+        <div class="diagram-container">
+            <div class="mermaid">
+                flowchart LR
+                    Start([WOFF初期化開始]) --> A[woff.init呼び出し]
+                    A --> B{初期化成功？}
+                    B -->|No| Error[エラーログ出力]
+                    B -->|Yes| C[woff.isInClient確認]
+                    C --> D{LINE WORKS内？}
+                    D -->|No| Alert[アラート表示]
+                    D -->|Yes| E[woff.getProfile呼び出し]
+                    E --> F[プロファイル取得]
+                    F --> G[displayName保存]
+                    F --> H[userId保存]
+                    G --> End([初期化完了])
+                    H --> End
+                    Error --> End
+                    Alert --> End
+            </div>
+        </div>
+
+        <h2>3. 画像処理フロー</h2>
+        <div class="description">
+            写真アップロードから送信までの画像処理の詳細フローです。
+        </div>
+        <div class="diagram-container">
+            <div class="mermaid">
+                flowchart TD
+                    Start([画像選択]) --> A[ファイル選択イベント]
+                    A --> B[ファイル名表示更新]
+                    B --> C[FileReader作成]
+                    C --> D[画像読み込み]
+                    D --> E[プレビュー生成]
+                    E --> F[プレビュー表示]
+                    
+                    F --> G([送信時処理])
+                    G --> H{画像あり？}
+                    H -->|No| Skip[画像処理スキップ]
+                    H -->|Yes| I[FileReader作成]
+                    I --> J[Base64変換]
+                    J --> K[データURL分割]
+                    K --> L[Base64部分抽出]
+                    L --> M[送信データに追加]
+                    
+                    Skip --> End([処理完了])
+                    M --> End
+            </div>
+        </div>
+
+        <h2>4. データ送信フロー</h2>
+        <div class="description">
+            フォームデータをGoogle Apps Scriptへ送信する処理の詳細フローです。
+        </div>
+        <div class="diagram-container">
+            <div class="mermaid">
+                flowchart TD
+                    Start([送信開始]) --> A[送信ボタン無効化]
+                    A --> B[処理中メッセージ表示]
+                    B --> C[URLSearchParams作成]
+                    C --> D[フォームデータ収集]
+                    D --> E[パラメータ追加<br/>tweet, donator, weight<br/>contents, memo]
+                    E --> F[WOFF情報追加<br/>inputUser, inputUserId]
+                    F --> G{画像あり？}
+                    G -->|Yes| H[画像Base64追加]
+                    G -->|No| I[送信実行]
+                    H --> I
+                    
+                    I --> J[fetch API実行]
+                    J --> K[GASエンドポイント<br/>POSTリクエスト]
+                    K --> L{レスポンス受信}
+                    L --> M[JSON解析]
+                    M --> N{status確認}
+                    N -->|success| O[成功処理]
+                    N -->|error| P[エラー処理]
+                    
+                    O --> Q[アラート表示<br/>送信完了]
+                    O --> R[フォームリセット]
+                    O --> S[モーダル非表示]
+                    
+                    P --> T[アラート表示<br/>エラーメッセージ]
+                    
+                    Q --> U[送信ボタン有効化]
+                    T --> U
+                    U --> V[処理中メッセージ非表示]
+                    V --> End([送信処理完了])
+            </div>
+        </div>
+
+        <h2>5. エラーハンドリングフロー</h2>
+        <div class="description">
+            各種エラー発生時の処理フローです。
+        </div>
+        <div class="diagram-container">
+            <div class="mermaid">
+                flowchart TD
+                    Start([エラー発生]) --> A{エラー種別}
+                    
+                    A -->|WOFF初期化| B[コンソールログ出力]
+                    B --> C[機能制限モード]
+                    
+                    A -->|ネットワーク| D[fetchエラーキャッチ]
+                    D --> E[エラーログ出力]
+                    E --> F[エラーアラート表示]
+                    
+                    A -->|入力検証| G[検証エラー特定]
+                    G --> H[該当フィールドハイライト]
+                    H --> I[エラーメッセージ表示]
+                    
+                    A -->|GASレスポンス| J[ステータスチェック]
+                    J --> K[エラーメッセージ取得]
+                    K --> L[ユーザー通知]
+                    
+                    C --> M[UI状態復元]
+                    F --> M
+                    I --> M
+                    L --> M
+                    
+                    M --> N[送信ボタン有効化]
+                    N --> O[処理中表示解除]
+                    O --> End([エラー処理完了])
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#fff',
+                primaryTextColor: '#000',
+                primaryBorderColor: '#000',
+                lineColor: '#000',
+                secondaryColor: '#f5f5f5',
+                tertiaryColor: '#fff'
+            }
+        });
+    </script>
+</body>
+</html>
