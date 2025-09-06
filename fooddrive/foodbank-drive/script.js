@@ -25,25 +25,58 @@ document.addEventListener('DOMContentLoaded', function () {
         debugDiv.id = 'debugInfo';
         debugDiv.style.cssText = `
             position: fixed; 
-            bottom: 10px; 
-            right: 10px; 
-            background: rgba(0,0,0,0.8); 
+            top: 10px; 
+            left: 10px; 
+            background: rgba(255,0,0,0.9); 
             color: white; 
-            padding: 10px; 
-            font-size: 12px; 
-            max-width: 300px; 
-            z-index: 9999; 
-            border-radius: 5px;
-            font-family: monospace;
+            padding: 15px; 
+            font-size: 14px; 
+            max-width: 90%; 
+            width: 350px;
+            z-index: 99999; 
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            border: 3px solid yellow;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         `;
+        
+        const userAgent = navigator.userAgent;
+        const referrer = document.referrer;
+        
         debugDiv.innerHTML = `
-            <div><strong>🔍 デバッグ情報</strong></div>
-            <div>UA: ${navigator.userAgent.includes('WORKS') ? '✅ WORKS' : '❌ 非WORKS'}</div>
-            <div>URL: ${location.href}</div>
-            <div id="woffStatus">WOFF: 初期化中...</div>
-            <div id="userInfo">User: 未取得</div>
+            <div><strong>🔍 WOFF DEBUG PANEL</strong></div>
+            <div style="margin: 5px 0; border-top: 1px solid white; padding-top: 5px;">
+                <strong>Environment:</strong><br>
+                UA: ${userAgent.includes('WORKS') ? '✅ WORKS' : '❌ NOT_WORKS'}<br>
+                Referrer: ${referrer ? (referrer.includes('woff.worksmobile.com') ? '✅ WOFF_URL' : '⚠️ OTHER') : '❌ NONE'}<br>
+                URL: ${location.hostname}
+            </div>
+            <div style="margin: 5px 0; border-top: 1px solid white; padding-top: 5px;">
+                <div id="woffStatus">WOFF: 🔄 初期化中...</div>
+                <div id="userInfo">User: ⏳ 未取得</div>
+                <div id="statusInfo">Status: 📝 準備中</div>
+            </div>
+            <div style="margin: 5px 0; border-top: 1px solid white; padding-top: 5px; font-size: 12px;">
+                <div>Time: ${new Date().toLocaleTimeString()}</div>
+                <div>Protocol: ${location.protocol}</div>
+            </div>
         `;
         document.body.appendChild(debugDiv);
+        
+        // クリックで詳細情報を表示
+        debugDiv.addEventListener('click', () => {
+            alert(`DETAILED DEBUG INFO:
+User Agent: ${navigator.userAgent}
+Referrer: ${document.referrer}
+URL: ${window.location.href}
+Protocol: ${window.location.protocol}
+Host: ${window.location.host}
+Parent: ${window.parent === window ? 'SAME' : 'DIFFERENT'}
+Top: ${window.top === window ? 'SAME' : 'DIFFERENT'}
+Screen: ${screen.width}x${screen.height}
+Window: ${window.innerWidth}x${window.innerHeight}`);
+        });
+        
         return debugDiv;
     };
 
@@ -51,11 +84,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // デバッグ情報を更新する関数
-    const updateDebugInfo = (status, userInfo = '') => {
+    const updateDebugInfo = (status, userInfo = '', extraStatus = '') => {
         const woffStatusEl = document.getElementById('woffStatus');
         const userInfoEl = document.getElementById('userInfo');
-        if (woffStatusEl) woffStatusEl.textContent = `WOFF: ${status}`;
-        if (userInfoEl && userInfo) userInfoEl.textContent = `User: ${userInfo}`;
+        const statusInfoEl = document.getElementById('statusInfo');
+        
+        if (woffStatusEl) woffStatusEl.innerHTML = `WOFF: ${status}`;
+        if (userInfoEl) userInfoEl.innerHTML = `User: ${userInfo || '⏳ 未取得'}`;
+        if (statusInfoEl && extraStatus) statusInfoEl.innerHTML = `Status: ${extraStatus}`;
+        
+        // ログにも出力
+        console.log(`🔄 Debug Update - WOFF: ${status}, User: ${userInfo}, Status: ${extraStatus}`);
     };
 
 // クエリパラメータをコンソールに表示する
@@ -81,10 +120,25 @@ function logEnvironmentInfo() {
     console.log("- WORKS in UA:", navigator.userAgent.includes('WORKS'));
 }
 
+// ページ読み込み開始時点でのログ
+console.log('🚀 PAGE LOADING START');
+console.log('Timestamp:', new Date().toISOString());
+console.log('URL:', window.location.href);
+console.log('Referrer:', document.referrer);
+console.log('User Agent:', navigator.userAgent);
+
+// DOMContentLoaded前でもログを出力
+updateDebugInfo('📄 DOM読込中', '', 'ページ解析中');
+
 // ページが読み込まれたときに環境情報をログに記録する
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('📄 DOM CONTENT LOADED');
+    updateDebugInfo('📄 DOM完了', '', 'パラメータ解析中');
+    
     logQueryParameters();
     logEnvironmentInfo();
+    
+    updateDebugInfo('🔍 環境解析完了', '', 'SDK読込待機中');
 });
 
 

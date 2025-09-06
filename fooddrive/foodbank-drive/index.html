@@ -83,11 +83,31 @@
     </div>
 
     <!-- VConsole for debugging -->
-    <script src="https://unpkg.com/vconsole/dist/vconsole.min.js"></script>
+    <script src="https://unpkg.com/vconsole@3.15.1/dist/vconsole.min.js"></script>
     <script>
-        // VConsoleを初期化（デバッグ用）
-        var vConsole = new VConsole();
-        console.log('VConsole initialized for debugging');
+        // VConsoleを強制初期化
+        try {
+            window.vConsole = new window.VConsole();
+            console.log('✅ VConsole initialized successfully');
+            
+            // VConsoleボタンを強制表示
+            setTimeout(() => {
+                const vConsoleButton = document.querySelector('#__vconsole .vc-switch');
+                if (vConsoleButton) {
+                    vConsoleButton.style.display = 'block';
+                    vConsoleButton.style.position = 'fixed';
+                    vConsoleButton.style.zIndex = '99999';
+                    vConsoleButton.style.bottom = '10px';
+                    vConsoleButton.style.right = '10px';
+                    console.log('✅ VConsoleボタンを強制表示');
+                } else {
+                    console.warn('⚠️ VConsoleボタンが見つかりません');
+                }
+            }, 1000);
+        } catch (e) {
+            console.error('❌ VConsole初期化失敗:', e);
+            alert('VConsole初期化失敗: ' + e.message);
+        }
     </script>
     
     <!-- 複数バージョンのWOFF SDKを試す -->
