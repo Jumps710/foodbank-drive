@@ -1,0 +1,433 @@
+// ============================================================================
+// WAREHOUSE SYSTEM API FUNCTIONS - Add to Code.js
+// ============================================================================
+
+// Add these cases to the switch statement in handleApiRequest function:
+/*
+      // Warehouse System API
+      case 'getRequests':
+        result = getWarehouseRequests(params);
+        break;
+        
+      case 'getRequestDetails':
+        result = getWarehouseRequestDetails(params);
+        break;
+        
+      case 'submitRequest':
+        result = submitWarehouseRequest(params);
+        break;
+        
+      case 'updateRequestStatus':
+        result = updateWarehouseRequestStatus(params);
+        break;
+        
+      case 'getDashboardData':
+        result = getWarehouseDashboardData(params);
+        break;
+        
+      case 'getUserRole':
+        result = getWarehouseUserRole(params);
+        break;
+*/
+
+// Add these functions at the end of Code.js:
+
+/**
+ * 倉庫システム: リクエスト一覧取得
+ */
+function getWarehouseRequests(params) {
+  try {
+    const userId = params.userId;
+    const isAdmin = params.isAdmin === 'true';
+    
+    logToSheet('INFO', 'Warehouse: Get Requests', { userId, isAdmin });
+    
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let requestsSheet = spreadsheet.getSheetByName('warehouse_requests');
+    
+    // シートがない場合は作成
+    if (!requestsSheet) {
+      requestsSheet = createWarehouseRequestsSheet(spreadsheet);
+    }
+    
+    const data = requestsSheet.getDataRange().getValues();
+    if (data.length <= 1) {
+      // ヘッダーのみまたは空の場合、空の配列を返す
+      return {
+        success: true,
+        requests: []
+      };
+    }
+    
+    const headers = data[0];
+    const rows = data.slice(1);
+    
+    let requests = rows.map(row => {
+      let request = {};
+      headers.forEach((header, index) => {
+        request[header] = row[index];
+      });
+      return request;
+    });
+    
+    // 管理者でない場合は自分のリクエストのみ
+    if (!isAdmin) {
+      requests = requests.filter(request => request.requesterUserId === userId);
+    }
+    
+    // 最新のものから順にソート
+    requests.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+    
+    logToSheet('INFO', 'Warehouse: Requests Retrieved', { count: requests.length });
+    
+    return {
+      success: true,
+      requests: requests
+    };
+    
+  } catch (error) {
+    logToSheet('ERROR', 'Warehouse: Get Requests Error', { error: error.toString() });
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * 倉庫システム: リクエスト詳細取得
+ */
+function getWarehouseRequestDetails(params) {
+  try {
+    const requestId = params.requestId;
+    const userId = params.userId;
+    
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const requestsSheet = spreadsheet.getSheetByName('warehouse_requests');
+    
+    if (!requestsSheet) {
+      return {
+        success: false,
+        error: 'リクエストシートが見つかりません'
+      };
+    }
+    
+    const data = requestsSheet.getDataRange().getValues();
+    const headers = data[0];
+    const rows = data.slice(1);
+    
+    const requestRow = rows.find(row => row[headers.indexOf('requestId')] === requestId);
+    
+    if (!requestRow) {
+      return {
+        success: false,
+        error: 'リクエストが見つかりません'
+      };
+    }
+    
+    let request = {};
+    headers.forEach((header, index) => {
+      request[header] = requestRow[index];
+    });
+    
+    return {
+      success: true,
+      request: request
+    };
+    
+  } catch (error) {
+    logToSheet('ERROR', 'Warehouse: Get Request Details Error', { error: error.toString() });
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * 倉庫システム: リクエスト送信
+ */
+function submitWarehouseRequest(params) {
+  try {
+    const data = JSON.parse(params.data);
+    
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let requestsSheet = spreadsheet.getSheetByName('warehouse_requests');
+    
+    // シートがない場合は作成
+    if (!requestsSheet) {
+      requestsSheet = createWarehouseRequestsSheet(spreadsheet);
+    }
+    
+    // リクエストIDを生成
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+    const timeStr = String(today.getTime()).slice(-4);
+    const requestId = `REQ-${dateStr}-${timeStr}`;
+    
+    // データを追加
+    const newRow = [
+      requestId,                    // requestId
+      data.organizationName,        // organizationName
+      data.contactPerson,           // contactPerson
+      data.contactPhone,            // contactPhone
+      data.contactEmail || '',      // contactEmail
+      data.beneficiaryCount,        // beneficiaryCount
+      data.foodType,                // foodType
+      data.quantityNeeded || '',    // quantityNeeded
+      data.pickupDate,              // pickupDate
+      data.pickupTime || '',        // pickupTime
+      data.usagePurpose,            // usagePurpose
+      data.specialNotes || '',      // specialNotes
+      'pending',                    // status
+      data.requesterUserId,         // requesterUserId
+      data.requesterName,           // requesterName
+      data.platform,                // platform
+      data.submittedAt,             // submittedAt
+      data.submittedAt              // updatedAt
+    ];
+    
+    requestsSheet.appendRow(newRow);
+    
+    logToSheet('INFO', 'Warehouse: Request Submitted', { requestId, organization: data.organizationName });
+    
+    return {
+      success: true,
+      requestId: requestId,
+      message: 'リクエストが正常に送信されました'
+    };
+    
+  } catch (error) {
+    logToSheet('ERROR', 'Warehouse: Submit Request Error', { error: error.toString() });
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * 倉庫システム: リクエストステータス更新
+ */
+function updateWarehouseRequestStatus(params) {
+  try {
+    const requestId = params.requestId;
+    const newStatus = params.status;
+    const updatedBy = params.updatedBy;
+    
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const requestsSheet = spreadsheet.getSheetByName('warehouse_requests');
+    
+    if (!requestsSheet) {
+      return {
+        success: false,
+        error: 'リクエストシートが見つかりません'
+      };
+    }
+    
+    const data = requestsSheet.getDataRange().getValues();
+    const headers = data[0];
+    const statusColIndex = headers.indexOf('status');
+    const updatedAtColIndex = headers.indexOf('updatedAt');
+    const requestIdColIndex = headers.indexOf('requestId');
+    
+    // リクエストを探して更新
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][requestIdColIndex] === requestId) {
+        requestsSheet.getRange(i + 1, statusColIndex + 1).setValue(newStatus);
+        requestsSheet.getRange(i + 1, updatedAtColIndex + 1).setValue(new Date().toISOString());
+        
+        logToSheet('INFO', 'Warehouse: Status Updated', { 
+          requestId, 
+          newStatus, 
+          updatedBy 
+        });
+        
+        return {
+          success: true,
+          message: 'ステータスが正常に更新されました'
+        };
+      }
+    }
+    
+    return {
+      success: false,
+      error: 'リクエストが見つかりません'
+    };
+    
+  } catch (error) {
+    logToSheet('ERROR', 'Warehouse: Update Status Error', { error: error.toString() });
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * 倉庫システム: ダッシュボードデータ取得
+ */
+function getWarehouseDashboardData(params) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let requestsSheet = spreadsheet.getSheetByName('warehouse_requests');
+    
+    if (!requestsSheet) {
+      return {
+        success: true,
+        data: {
+          totalRequests: 0,
+          pendingRequests: 0,
+          completedRequests: 0,
+          totalBeneficiaries: 0,
+          statusCounts: {},
+          categoryCounts: {},
+          recentRequests: []
+        }
+      };
+    }
+    
+    const data = requestsSheet.getDataRange().getValues();
+    if (data.length <= 1) {
+      // Empty data
+      return {
+        success: true,
+        data: {
+          totalRequests: 0,
+          pendingRequests: 0,
+          completedRequests: 0,
+          totalBeneficiaries: 0,
+          statusCounts: {},
+          categoryCounts: {},
+          recentRequests: []
+        }
+      };
+    }
+    
+    const headers = data[0];
+    const rows = data.slice(1);
+    
+    let requests = rows.map(row => {
+      let request = {};
+      headers.forEach((header, index) => {
+        request[header] = row[index];
+      });
+      return request;
+    });
+    
+    // 統計計算
+    const totalRequests = requests.length;
+    const pendingRequests = requests.filter(r => r.status === 'pending').length;
+    const completedRequests = requests.filter(r => r.status === 'completed').length;
+    const totalBeneficiaries = requests.reduce((sum, r) => sum + (parseInt(r.beneficiaryCount) || 0), 0);
+    
+    // ステータス別集計
+    const statusCounts = {};
+    requests.forEach(r => {
+      statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
+    });
+    
+    // カテゴリ別集計
+    const categoryCounts = {};
+    requests.forEach(r => {
+      categoryCounts[r.foodType] = (categoryCounts[r.foodType] || 0) + 1;
+    });
+    
+    // 最近のリクエスト（最新5件）
+    const recentRequests = requests
+      .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
+      .slice(0, 5);
+    
+    return {
+      success: true,
+      data: {
+        totalRequests,
+        pendingRequests,
+        completedRequests,
+        totalBeneficiaries,
+        statusCounts,
+        categoryCounts,
+        recentRequests
+      }
+    };
+    
+  } catch (error) {
+    logToSheet('ERROR', 'Warehouse: Dashboard Data Error', { error: error.toString() });
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * 倉庫システム: ユーザー役割取得
+ */
+function getWarehouseUserRole(params) {
+  try {
+    const lineUserId = params.lineUserId;
+    
+    // 管理者リスト（必要に応じて別シートから取得）
+    const adminUsers = [
+      // LINE WORKS管理者のUser IDをここに追加
+      // 'U1234567890abcdef...'
+    ];
+    
+    const role = adminUsers.includes(lineUserId) ? 'admin' : 'requester';
+    
+    return {
+      success: true,
+      role: role
+    };
+    
+  } catch (error) {
+    logToSheet('ERROR', 'Warehouse: Get User Role Error', { error: error.toString() });
+    return {
+      success: false,
+      error: error.toString()
+    };
+  }
+}
+
+/**
+ * 倉庫システム: リクエストシート作成
+ */
+function createWarehouseRequestsSheet(spreadsheet) {
+  const sheet = spreadsheet.insertSheet('warehouse_requests');
+  
+  // ヘッダー行を設定
+  const headers = [
+    'requestId',           // リクエストID
+    'organizationName',    // 団体名
+    'contactPerson',       // 担当者名
+    'contactPhone',        // 連絡先電話
+    'contactEmail',        // 連絡先メール
+    'beneficiaryCount',    // 受益者数
+    'foodType',            // 食品カテゴリ
+    'quantityNeeded',      // 希望数量
+    'pickupDate',          // 受取予定日
+    'pickupTime',          // 受取時間帯
+    'usagePurpose',        // 使用目的
+    'specialNotes',        // 特記事項
+    'status',              // ステータス
+    'requesterUserId',     // 申請者ID
+    'requesterName',       // 申請者名
+    'platform',            // プラットフォーム
+    'submittedAt',         // 申請日時
+    'updatedAt'            // 更新日時
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+  
+  // 列幅を調整
+  sheet.setColumnWidth(1, 150); // requestId
+  sheet.setColumnWidth(2, 200); // organizationName
+  sheet.setColumnWidth(3, 150); // contactPerson
+  sheet.setColumnWidth(11, 300); // usagePurpose
+  sheet.setColumnWidth(12, 200); // specialNotes
+  
+  logToSheet('INFO', 'Warehouse: Requests Sheet Created', { sheetName: 'warehouse_requests' });
+  
+  return sheet;
+}
