@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>フードドライブ入庫</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <img id="logo" src="https://raw.githubusercontent.com/jumps710/foodbank-drive/main/rgb_02_fs(2).jpg" alt="ロゴ">
+        <h1>フードドライブ入庫</h1>
+        <form id="foodDriveForm" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Tweet:</label>
+                <div class="radio-group">
+                    <input type="radio" id="tweetYes" name="tweet" value="true" required>
+                    <label for="tweetYes">する</label>
+                    <input type="radio" id="tweetNo" name="tweet" value="false" required>
+                    <label for="tweetNo">しない</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="donator">寄付者:</label>
+                <select id="donator" name="donator" required>
+                    <option value="" disabled selected>選択してください</option>
+                    <option value="個人の皆">個人の皆</option>
+                    <option value="コープみらい">コープみらい</option>
+                    <option value="コープ市川店">コープ市川店</option>
+                　　 <option value="コープデリ湾岸センター">コープデリ湾岸センター</option>
+                    <option value="シャポーむすぶば">シャポーむすぶば</option>
+                    <option value="KeiyoGAS Community Terrace（てらす）">KeiyoGAS Community Terrace（てらす）</option>
+                    <option value="いちかわ社協">いちかわ社協</option>
+                    <option value="その他">その他</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="otherDonatorField" style="display:none;">
+                <label for="otherDonator">企業/団体名:</label>
+                <input type="text" id="otherDonator" name="otherDonator" placeholder="企業/団体名を入力してください">
+            </div>
+
+            <div class="form-group">
+                <label for="weight">重量 (kg):</label>
+                <input type="text" id="weight" name="weight" inputmode="numeric"　required placeholder="例: 0.1">
+            </div>
+
+            <div class="form-group">
+                <label for="contents">寄付内容:</label>
+                <input type="text" id="contents" name="contents" required placeholder="例: 缶詰、レトルト、お米10キロなど">
+            </div>
+
+            <div class="form-group">
+                <label for="memo">メモ:</label>
+                <input type="text" id="memo" name="memo" placeholder="補足事項があれば入力してください">
+            </div>
+
+            <div class="form-group">
+                <label for="photo">写真:</label>
+                <div class="file-group">
+                    <label for="photo" class="custom-file-label">ファイルを選択</label>
+                    <input type="file" id="photo" name="photo" accept="image/jpeg, image/png, image/heic" style="display: none;">
+                    <span class="file-name" id="fileName">選択されていません</span>
+                </div>
+                <div id="photoPreview"></div>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" id="submitBtn">送信</button>
+                <button type="reset" id="resetBtn">やり直し</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>入力内容の確認</h2>
+            <div id="modalSummary"></div>
+            <button id="confirmSubmit">送信</button>
+        </div>
+    </div>
+
+    <!-- VConsole for debugging -->
+    <script src="https://unpkg.com/vconsole@3.15.1/dist/vconsole.min.js"></script>
+    <script>
+        // VConsoleを強制初期化
+        try {
+            window.vConsole = new window.VConsole();
+            console.log('✅ VConsole initialized successfully');
+            
+            // VConsoleボタンを強制表示
+            setTimeout(() => {
+                const vConsoleButton = document.querySelector('#__vconsole .vc-switch');
+                if (vConsoleButton) {
+                    vConsoleButton.style.display = 'block';
+                    vConsoleButton.style.position = 'fixed';
+                    vConsoleButton.style.zIndex = '99999';
+                    vConsoleButton.style.bottom = '10px';
+                    vConsoleButton.style.right = '10px';
+                    console.log('✅ VConsoleボタンを強制表示');
+                } else {
+                    console.warn('⚠️ VConsoleボタンが見つかりません');
+                }
+            }, 1000);
+        } catch (e) {
+            console.error('❌ VConsole初期化失敗:', e);
+            alert('VConsole初期化失敗: ' + e.message);
+        }
+    </script>
+    
+    <!-- 複数バージョンのWOFF SDKを試す -->
+    <script>
+        console.log('🔄 WOFF SDK 読み込み開始');
+        
+        // SDKの読み込み状況をチェックする関数
+        function checkWoffSDK() {
+            if (typeof woff !== 'undefined') {
+                console.log('✅ WOFF SDK 読み込み成功');
+                return true;
+            }
+            console.warn('⚠️ WOFF SDK 読み込み失敗');
+            return false;
+        }
+        
+        // SDK読み込み完了の監視
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                checkWoffSDK();
+            }, 1000);
+        });
+    </script>
+    
+    <!-- 最新版のWOFF SDK (3.6.2) -->
+    <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.6.2/sdk.js"></script>
+    
+    <!-- フォールバック用（異なるバージョン） -->
+    <script>
+        // 3.6.2で失敗した場合の3.6フォールバック
+        setTimeout(() => {
+            if (typeof woff === 'undefined') {
+                console.warn('⚠️ WOFF SDK 3.6.2 読み込み失敗、3.6にフォールバック');
+                const fallbackScript = document.createElement('script');
+                fallbackScript.src = 'https://static.worksmobile.net/static/wm/woff/edge/3.6/sdk.js';
+                fallbackScript.onload = () => {
+                    console.log('✅ WOFF SDK 3.6 フォールバック読み込み完了');
+                    // フォールバック読み込み後も初期化を再試行
+                    setTimeout(() => {
+                        if (typeof delayedInitialize === 'function') {
+                            console.log('🔄 フォールバック後の初期化再試行');
+                            delayedInitialize();
+                        }
+                    }, 500);
+                };
+                fallbackScript.onerror = () => {
+                    console.error('❌ WOFF SDK 3.6 フォールバックも失敗、3.5を試行');
+                    // 3.5への最終フォールバック
+                    const finalFallback = document.createElement('script');
+                    finalFallback.src = 'https://static.worksmobile.net/static/wm/woff/edge/3.5/sdk.js';
+                    finalFallback.onload = () => console.log('✅ WOFF SDK 3.5 最終フォールバック読み込み完了');
+                    finalFallback.onerror = () => console.error('❌ 全てのWOFF SDKの読み込みに失敗');
+                    document.head.appendChild(finalFallback);
+                };
+                document.head.appendChild(fallbackScript);
+            }
+        }, 2000);
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
