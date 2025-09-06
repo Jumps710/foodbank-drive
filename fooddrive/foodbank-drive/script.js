@@ -49,46 +49,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const debugDiv = createDebugInfo();
 
-    // 初期状態でフォームを無効化（認証完了まで）
-    const initializeFormState = () => {
-        const form = document.getElementById('foodDriveForm');
-        const submitBtn = document.getElementById('submitBtn');
-        
-        if (form && submitBtn) {
-            // フォームの各入力要素を無効化
-            const inputs = form.querySelectorAll('input, select, button');
-            inputs.forEach(input => {
-                if (input.id !== 'resetBtn') { // リセットボタンは除外
-                    input.disabled = true;
-                    input.style.opacity = '0.5';
-                }
-            });
-            
-            // 送信ボタンに認証待ちメッセージを表示
-            submitBtn.textContent = 'LINE WORKS認証中...';
-            console.log('📝 フォームを認証待ち状態に設定');
-        }
-    };
-
-    // フォームを有効化する関数
-    const enableForm = () => {
-        const form = document.getElementById('foodDriveForm');
-        const submitBtn = document.getElementById('submitBtn');
-        
-        if (form && submitBtn) {
-            const inputs = form.querySelectorAll('input, select, button');
-            inputs.forEach(input => {
-                input.disabled = false;
-                input.style.opacity = '1';
-            });
-            
-            submitBtn.textContent = '送信';
-            console.log('✅ フォームを使用可能状態に設定');
-        }
-    };
-
-    // 初期化
-    initializeFormState();
 
     // デバッグ情報を更新する関数
     const updateDebugInfo = (status, userInfo = '') => {
@@ -177,18 +137,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log("iframe/webview内チェック:", urlCheck);
                 
                 if (!isInClient) {
-                    console.warn("⚠️ 外部ブラウザでの実行を検出（PC/Web版では正常）");
+                    console.warn("⚠️ isInClient()がfalseを返しました");
                     console.log("現在のURL:", window.location.href);
                     console.log("現在のUserAgent:", navigator.userAgent);
                     console.log("Window parent check:", window.parent !== window);
-                    updateDebugInfo("🔑 ログイン処理中");
+                    updateDebugInfo("⚠️ 非クライアント");
                     
-                    // 外部ブラウザでは明示的なログイン処理が必要
-                    console.log("🔑 外部ブラウザログイン処理を開始");
-                    return woff.login();
+                    // モバイルアプリからの実行でもisInClient()がfalseになる場合があるため
+                    // プロファイル取得を試行する
+                    console.log("⚠️ isInClient=false でもプロファイル取得を試行");
                 }
                 
-                console.log("✅ 認証済み環境での実行を確認");
                 console.log("🔍 ユーザープロファイル取得開始");
                 updateDebugInfo("プロファイル取得中");
                 
@@ -196,15 +155,6 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then((profile) => {
                 console.log("📋 プロファイル取得結果:", profile);
-                
-                // ログイン処理の結果として返されるオブジェクトかプロファイルかを判定
-                if (profile && profile.redirectUri) {
-                    // ログイン処理の場合、リダイレクトが発生する
-                    console.log("🔑 ログイン処理が実行されました");
-                    updateDebugInfo("🔑 認証中", "ログイン画面表示");
-                    // ログイン後は自動的にリダイレクトされるため、ここでは処理終了
-                    return;
-                }
                 
                 if (profile) {
                     displayName = profile.displayName || '';
@@ -214,16 +164,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     console.log("- displayName:", displayName);
                     console.log("- userId:", userId);
                     updateDebugInfo("✅ 完了", displayName);
-                    
-                    // フォーム全体を有効化
-                    enableForm();
                 } else {
                     console.warn("⚠️ プロファイル情報が空です");
                     updateDebugInfo("⚠️ プロファイル空");
-                    
-                    // プロファイルが取得できない場合は再度ログイン処理を試行
-                    console.log("🔄 プロファイル再取得のため、ログイン処理を再実行");
-                    return woff.login();
                 }
             })
             .catch((err) => {
@@ -253,37 +196,28 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     };
 
-    // 代替のクライアント判定方法
-    const alternativeClientCheck = () => {
-        console.log("🔍 代替クライアント判定を実行");
+    // モバイルアプリからの実行状況を詳細確認
+    const logMobileAppContext = () => {
+        console.log("📱 モバイルアプリコンテキスト詳細:");
+        console.log("- navigator.userAgent:", navigator.userAgent);
+        console.log("- document.referrer:", document.referrer);
+        console.log("- window.location.href:", window.location.href);
+        console.log("- window.location.hostname:", window.location.hostname);
+        console.log("- window.location.protocol:", window.location.protocol);
+        console.log("- window.parent === window:", window.parent === window);
+        console.log("- window.top === window:", window.top === window);
+        console.log("- window.opener:", window.opener);
         
-        // 1. User Agent チェック
-        const userAgent = navigator.userAgent;
-        const hasWorksUA = userAgent.includes('WORKS') || userAgent.includes('WorksMobile');
-        console.log("UA check:", hasWorksUA, userAgent);
+        // LINE WORKS特有のオブジェクトチェック
+        console.log("- window.WorksMobile:", typeof window.WorksMobile);
+        console.log("- window.wm:", typeof window.wm);
+        console.log("- window.webkit:", typeof window.webkit);
         
-        // 2. URL パラメータチェック
-        const urlParams = new URLSearchParams(window.location.search);
-        const hasWorksParam = urlParams.has('worksmobile') || urlParams.has('wm');
-        console.log("URL param check:", hasWorksParam);
-        
-        // 3. Referrer チェック
-        const referrer = document.referrer;
-        const hasWorksReferrer = referrer.includes('worksmobile') || referrer.includes('works');
-        console.log("Referrer check:", hasWorksReferrer, referrer);
-        
-        // 4. Window プロパティチェック
-        const isInFrame = window.self !== window.top;
-        console.log("Frame check:", isInFrame);
-        
-        // 5. 特定のオブジェクトの存在チェック
-        const hasWorksObjects = !!(window.WorksMobile || window.wm || window.webkit);
-        console.log("Works objects check:", hasWorksObjects);
-        
-        const alternativeResult = hasWorksUA || hasWorksParam || hasWorksReferrer || isInFrame || hasWorksObjects;
-        console.log("🎯 代替判定結果:", alternativeResult);
-        
-        return alternativeResult;
+        // viewport情報
+        console.log("- screen.width:", screen.width);
+        console.log("- screen.height:", screen.height);
+        console.log("- window.innerWidth:", window.innerWidth);
+        console.log("- window.innerHeight:", window.innerHeight);
     };
 
     // 遅延初期化（WOFF SDKの読み込み完了を待つ）
@@ -292,6 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         if (typeof woff !== 'undefined') {
             console.log(`✅ WOFF SDK確認済み (${retryCount}回目)`);
+            logMobileAppContext(); // モバイルアプリコンテキストを詳細ログ
             initializeWoff();
         } else if (retryCount < maxRetries) {
             console.log(`⏳ WOFF SDK待機中 (${retryCount + 1}/${maxRetries})`);
@@ -299,17 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             console.error("❌ WOFF SDK読み込みタイムアウト");
             updateDebugInfo("❌ SDK未読込");
-            
-            // 代替判定を実行
-            const alternativeOK = alternativeClientCheck();
-            if (alternativeOK) {
-                console.log("💡 代替判定でLINE WORKS環境を検出");
-                updateDebugInfo("⚠️ 代替判定OK");
-                alert("WOFF SDKの読み込みに失敗しましたが、LINE WORKS環境を検出しました。一部機能が制限される可能性があります。");
-            } else {
-                console.log("💡 代替判定でもLINE WORKS環境を検出できませんでした");
-                updateDebugInfo("❌ 環境不適合");
-            }
+            alert("WOFF SDKの読み込みに失敗しました。");
         }
     };
 
