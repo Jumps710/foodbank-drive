@@ -11,7 +11,7 @@
    - GitHubの Settings > Developer settings > Personal access tokens から新しいトークンを生成してください
 
 2. **トークンの無効化**
-   - 現在のトークン（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）を即座に無効化してください
+   - 現在のトークン（ghp_XXXXXXで始まるトークン）を即座に無効化してください
    - GitHub > Settings > Developer settings > Personal access tokens から削除できます
 
 3. **今後のトークン管理**

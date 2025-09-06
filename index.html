@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>フードドライブ入庫</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <img id="logo" src="https://raw.githubusercontent.com/jumps710/foodbank-drive/main/rgb_02_fs(2).jpg" alt="ロゴ">
+        <h1>フードドライブ入庫</h1>
+        <form id="foodDriveForm" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Tweet:</label>
+                <div class="radio-group">
+                    <input type="radio" id="tweetYes" name="tweet" value="true" required>
+                    <label for="tweetYes">する</label>
+                    <input type="radio" id="tweetNo" name="tweet" value="false" required>
+                    <label for="tweetNo">しない</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="donator">寄付者:</label>
+                <select id="donator" name="donator" required>
+                    <option value="" disabled selected>選択してください</option>
+                    <option value="個人の皆">個人の皆</option>
+                    <option value="コープみらい">コープみらい</option>
+                    <option value="コープ市川店">コープ市川店</option>
+                　　 <option value="コープデリ湾岸センター">コープデリ湾岸センター</option>
+                    <option value="シャポーむすぶば">シャポーむすぶば</option>
+                    <option value="KeiyoGAS Community Terrace（てらす）">KeiyoGAS Community Terrace（てらす）</option>
+                    <option value="いちかわ社協">いちかわ社協</option>
+                    <option value="その他">その他</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="otherDonatorField" style="display:none;">
+                <label for="otherDonator">企業/団体名:</label>
+                <input type="text" id="otherDonator" name="otherDonator" placeholder="企業/団体名を入力してください">
+            </div>
+
+            <div class="form-group">
+                <label for="weight">重量 (kg):</label>
+                <input type="text" id="weight" name="weight" inputmode="numeric"　required placeholder="例: 0.1">
+            </div>
+
+            <div class="form-group">
+                <label for="contents">寄付内容:</label>
+                <input type="text" id="contents" name="contents" required placeholder="例: 缶詰、レトルト、お米10キロなど">
+            </div>
+
+            <div class="form-group">
+                <label for="memo">メモ:</label>
+                <input type="text" id="memo" name="memo" placeholder="補足事項があれば入力してください">
+            </div>
+
+            <div class="form-group">
+                <label for="photo">写真:</label>
+                <div class="file-group">
+                    <label for="photo" class="custom-file-label">ファイルを選択</label>
+                    <input type="file" id="photo" name="photo" accept="image/jpeg, image/png, image/heic" style="display: none;">
+                    <span class="file-name" id="fileName">選択されていません</span>
+                </div>
+                <div id="photoPreview"></div>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" id="submitBtn">送信</button>
+                <button type="reset" id="resetBtn">やり直し</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>入力内容の確認</h2>
+            <div id="modalSummary"></div>
+            <button id="confirmSubmit">送信</button>
+        </div>
+    </div>
+
+    <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.6/sdk.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
