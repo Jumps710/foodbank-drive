@@ -49,6 +49,47 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const debugDiv = createDebugInfo();
 
+    // 初期状態でフォームを無効化（認証完了まで）
+    const initializeFormState = () => {
+        const form = document.getElementById('foodDriveForm');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        if (form && submitBtn) {
+            // フォームの各入力要素を無効化
+            const inputs = form.querySelectorAll('input, select, button');
+            inputs.forEach(input => {
+                if (input.id !== 'resetBtn') { // リセットボタンは除外
+                    input.disabled = true;
+                    input.style.opacity = '0.5';
+                }
+            });
+            
+            // 送信ボタンに認証待ちメッセージを表示
+            submitBtn.textContent = 'LINE WORKS認証中...';
+            console.log('📝 フォームを認証待ち状態に設定');
+        }
+    };
+
+    // フォームを有効化する関数
+    const enableForm = () => {
+        const form = document.getElementById('foodDriveForm');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        if (form && submitBtn) {
+            const inputs = form.querySelectorAll('input, select, button');
+            inputs.forEach(input => {
+                input.disabled = false;
+                input.style.opacity = '1';
+            });
+            
+            submitBtn.textContent = '送信';
+            console.log('✅ フォームを使用可能状態に設定');
+        }
+    };
+
+    // 初期化
+    initializeFormState();
+
     // デバッグ情報を更新する関数
     const updateDebugInfo = (status, userInfo = '') => {
         const woffStatusEl = document.getElementById('woffStatus');
@@ -136,16 +177,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log("iframe/webview内チェック:", urlCheck);
                 
                 if (!isInClient) {
-                    console.warn("⚠️ LINE WORKSクライアント外での実行を検出");
+                    console.warn("⚠️ 外部ブラウザでの実行を検出（PC/Web版では正常）");
                     console.log("現在のURL:", window.location.href);
                     console.log("現在のUserAgent:", navigator.userAgent);
                     console.log("Window parent check:", window.parent !== window);
-                    updateDebugInfo("❌ 非クライアント");
-                    alert("この機能はLINE WORKSアプリ内でのみ使用できます。");
-                    return Promise.reject(new Error("Not in LINE WORKS client"));
+                    updateDebugInfo("🔑 ログイン処理中");
+                    
+                    // 外部ブラウザでは明示的なログイン処理が必要
+                    console.log("🔑 外部ブラウザログイン処理を開始");
+                    return woff.login();
                 }
                 
-                console.log("✅ LINE WORKSクライアント内での実行を確認");
+                console.log("✅ 認証済み環境での実行を確認");
                 console.log("🔍 ユーザープロファイル取得開始");
                 updateDebugInfo("プロファイル取得中");
                 
@@ -153,6 +196,15 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then((profile) => {
                 console.log("📋 プロファイル取得結果:", profile);
+                
+                // ログイン処理の結果として返されるオブジェクトかプロファイルかを判定
+                if (profile && profile.redirectUri) {
+                    // ログイン処理の場合、リダイレクトが発生する
+                    console.log("🔑 ログイン処理が実行されました");
+                    updateDebugInfo("🔑 認証中", "ログイン画面表示");
+                    // ログイン後は自動的にリダイレクトされるため、ここでは処理終了
+                    return;
+                }
                 
                 if (profile) {
                     displayName = profile.displayName || '';
@@ -162,9 +214,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     console.log("- displayName:", displayName);
                     console.log("- userId:", userId);
                     updateDebugInfo("✅ 完了", displayName);
+                    
+                    // フォーム全体を有効化
+                    enableForm();
                 } else {
                     console.warn("⚠️ プロファイル情報が空です");
                     updateDebugInfo("⚠️ プロファイル空");
+                    
+                    // プロファイルが取得できない場合は再度ログイン処理を試行
+                    console.log("🔄 プロファイル再取得のため、ログイン処理を再実行");
+                    return woff.login();
                 }
             })
             .catch((err) => {
